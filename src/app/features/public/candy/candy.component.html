@@ -1,0 +1,71 @@
+<main class="candy l-container">
+  <div class="candy__layout">
+
+    <!-- COLUMNA IZQUIERDA: PRODUCTOS -->
+    <div class="candy__main">
+      <header class="candy__header">
+        <h1 class="candy__title">COLECCIONABLES Y COMBOS</h1>
+        <p class="candy__subtitle">Añade productos a tu reserva para saltarte la fila en el cine.</p>
+      </header>
+
+      <div class="candy__grid">
+        @for (prod of productos(); track prod.id) {
+          <article class="product-card">
+
+            <div class="product-card__image-box">
+              @if (prod.enOferta) {
+                <span class="product-card__badge">OFERTA</span>
+              }
+              <img [src]="prod.imagenUrl" [alt]="prod.nombre" class="product-card__img"
+                   onerror="this.src='https://via.placeholder.com/400x300/cbd4df/64748b?text=Combo'">
+            </div>
+
+            <div class="product-card__info">
+              <h3 class="product-card__title">{{ prod.nombre }}</h3>
+              <p class="product-card__desc">{{ prod.descripcion }}</p>
+
+              <div class="product-card__actions">
+                <span class="product-card__price">$ {{ prod.precio | number:'1.0-0' }}</span>
+
+                @if (getCantidad(prod.id) === 0) {
+                  <button class="product-card__btn-add" (click)="incrementar(prod.id)">Agregar</button>
+                } @else {
+                  <div class="quantity-controls">
+                    <button class="quantity-controls__btn" (click)="decrementar(prod.id)" aria-label="Quitar uno">-</button>
+                    <span class="quantity-controls__number">{{ getCantidad(prod.id) }}</span>
+                    <button class="quantity-controls__btn" (click)="incrementar(prod.id)" aria-label="Agregar uno">+</button>
+                  </div>
+                }
+              </div>
+            </div>
+
+          </article>
+        }
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: RESUMEN DE COMPRA -->
+    <aside class="candy__summary">
+      <app-resumen-compra
+        [pelicula]="{
+            titulo: pelicula()?.titulo || '',
+            formato: pelicula()?.formatos?.[0] || '2D',
+            posterUrl: pelicula()?.poster_url || ''
+          }"
+        [funcion]="{
+          cine: 'Complejo Lanús',
+          sala: salaSeleccionada() || '',
+          fechaFormateada: (horarioSeleccionado() | date:'dd/MM/yyyy') || '',
+          horaFormateada: (horarioSeleccionado() | date: 'HH:mm') || ''
+        }"
+        [butacas]="nombresButacas()"
+        [entradas]="resumenEntradas()"
+        [candy]="resumenCandy()"
+        [cargoServicioEntradas]="cargoServicioEntradas()"
+        [cargoServicioCandy]="cargoServicioCandy()"
+        (onContinuar)="irAlPago()">
+      </app-resumen-compra>
+    </aside>
+
+  </div>
+</main>

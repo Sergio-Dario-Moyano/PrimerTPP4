@@ -1,0 +1,402 @@
+/* src/app/features/public/detalle-pelicula/detalle-pelicula.css */
+
+:host {
+  display: block;
+  background-color: var(--bg-base, #121212);
+  min-height: 100vh;
+  color: #fff;
+}
+
+/* =========================================
+   Módulo: Cabecera de la Película
+========================================= */
+.detalle-cabecera {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  display: flex;
+  align-items: flex-end;
+  padding-top: 4rem;
+  overflow: hidden;
+}
+
+.detalle-cabecera__fondo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(20px) brightness(0.3);
+  z-index: 0;
+}
+
+.detalle-cabecera__contenedor {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  width: 100%;
+}
+
+.detalle-cabecera__poster {
+  width: 200px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.1);
+  margin: 0 auto;
+}
+
+.detalle-cabecera__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.detalle-cabecera__titulo {
+  font-size: 2.5rem;
+  margin: 0 0 1rem;
+  font-family: var(--font-display, inherit);
+}
+
+.detalle-cabecera__tags {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tag {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.tag--duracion {
+  color: #fff;
+}
+
+.tag--edad {
+  color: #fff;
+}
+
+.tag--genero {
+  color: #fff;
+}
+
+.detalle-cabecera__sinopsis {
+  color: var(--text-muted, #b3b3b3);
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 1.5rem auto 2rem;
+}
+
+/* =========================================
+   Módulo: Puntuación Promedio
+========================================= */
+.puntuacion-promedio {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background-color: rgba(0,0,0,0.4);
+  padding: 0.8rem 1.5rem;
+  border-radius: 30px;
+}
+
+.puntuacion-promedio__numero {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--accent-color, #f5b301);
+}
+
+.puntuacion-promedio__estrellas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.puntuacion-promedio__icono {
+  width: 20px;
+  height: 20px;
+  color: #444;
+  transition: color 0.2s ease-in-out;
+}
+
+.puntuacion-promedio__icono--activa {
+  color: var(--accent-color, #f5b301);
+}
+
+.puntuacion-promedio__total {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+/* =========================================
+   Contenedor Principal de Contenido
+========================================= */
+.contenedor-contenido {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+/* =========================================
+   Módulo: Sección de Reseñas y Formularios
+========================================= */
+.seccion-resenas__titulo {
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.caja-formulario {
+  background-color: var(--bg-surface, #1e1e1e);
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.formulario-resena__titulo {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.formulario-resena__selector-estrellas {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.formulario-resena__btn-estrella {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #444;
+  width: 32px;
+  height: 32px;
+  transition: transform 0.2s;
+  outline: none;
+}
+
+.formulario-resena__btn-estrella svg {
+  width: 100%;
+  height: 100%;
+}
+
+.formulario-resena__btn-estrella:hover {
+  transform: scale(1.1);
+}
+
+.formulario-resena__btn-estrella--seleccionada {
+  color: var(--accent-color, #f5b301);
+}
+
+.formulario-resena__input {
+  width: 100%;
+  background-color: #2b2b2b;
+  border: 1px solid #404040;
+  color: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.formulario-resena__input:focus {
+  outline: none;
+  border-color: var(--accent-color, #f5b301);
+}
+
+.formulario-resena__submit {
+  background-color: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.formulario-resena__submit:hover:not(:disabled) {
+  background-color: var(--accent-color, #f5b301);
+  color: #000;
+}
+
+.formulario-resena__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   Módulo: Mensajes de Estado
+========================================= */
+.mensaje-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: #171718;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.mensaje-estado p {
+  margin: 0;
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.mensaje-estado--exito {
+  border-left: 4px solid #22c55e;
+}
+
+.mensaje-estado--pendiente {
+  border-left: 4px solid var(--accent-color, #f5b301);
+}
+
+.mensaje-estado--login {
+  border-left: 4px solid #3b82f6;
+}
+
+.btn-login-texto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.5rem;
+  background-color: #2a2a2b;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-login-texto:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-2px);
+}
+
+/* =========================================
+   Módulo: Listado y Tarjetas de Reseñas
+========================================= */
+.lista-resenas {
+  display: grid;
+  gap: 1rem;
+}
+
+.lista-resenas__vacia {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  padding: 2rem 0;
+}
+
+.tarjeta-resena {
+  background-color: rgba(255,255,255,0.03);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid var(--accent-color, #f5b301);
+}
+
+.tarjeta-resena__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.tarjeta-resena__autor {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.tarjeta-resena__estrellas {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tarjeta-resena__estrella {
+  width: 16px;
+  height: 16px;
+  color: #444;
+}
+
+.tarjeta-resena__estrella--activa {
+  color: var(--accent-color, #f5b301);
+}
+
+.tarjeta-resena__comentario {
+  color: #ccc;
+  font-style: italic;
+  line-height: 1.5;
+  margin-bottom: 0.8rem;
+}
+
+.tarjeta-resena__fecha {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.mensaje-estado__link {
+  background-color: rgba(255,255,255,0.1);
+  color: var(--accent-color, #f5b301);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent-color, #f5b301);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.mensaje-estado__link:hover {
+  background-color: var(--accent-color, #f5b301);
+  color: #151515;
+  font-weight: bold;
+}
+
+/* =========================================
+   Media Queries
+========================================= */
+@media (min-width: 768px) {
+  .detalle-cabecera__contenedor {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+  }
+
+  .detalle-cabecera__poster {
+    width: 250px;
+    margin: 0;
+  }
+
+  .detalle-cabecera__info {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .detalle-cabecera__tags {
+    justify-content: flex-start;
+  }
+
+  .contenedor-contenido {
+    grid-template-columns: 2fr 1fr; /* Formulario al costado en PC */
+  }
+}

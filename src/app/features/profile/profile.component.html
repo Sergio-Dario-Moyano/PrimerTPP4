@@ -1,0 +1,72 @@
+<!-- ancho máximo a 1200px -->
+<section class="profile l-container">
+  <header class="profile__header">
+    <h2 class="profile__title">Mi Panel de Usuario</h2>
+  </header>
+
+
+  @if (cargando()) {
+    <div class="profile__loading">
+      <div class="pulse-dot pulse-dot-loading"></div>
+      <p>Cargando tu perfil...</p>
+    </div>
+  } @else if (error()) {
+    <div class="profile__error">
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+    <div class="profile__layout">
+
+      <!-- BARRA LATERAL -->
+      <aside class="profile__sidebar">
+        <div class="profile__user-info">
+          <div class="profile__avatar">
+            <span>{{ (usuario()?.user_metadata?.['nombre']?.charAt(0) || usuario()?.email?.charAt(0)) }}</span>
+          </div>
+          <h3 class="profile__name" style="text-transform: capitalize;">
+            {{ usuario()?.user_metadata?.['nombre'] }} {{ usuario()?.user_metadata?.['apellido'] }}
+          </h3>
+          <p class="profile__email">{{ usuario()?.email }}</p>
+        </div>
+
+        <!-- NAVEGACIÓN -->
+        <nav class="profile__nav">
+          <a routerLink="/perfil"
+             routerLinkActive="profile__nav-link--activo"
+             [routerLinkActiveOptions]="{exact: true}"
+             class="profile__nav-link">
+             Mis Entradas
+          </a>
+          <a routerLink="/perfil/puntos"
+             routerLinkActive="profile__nav-link--activo"
+             class="profile__nav-link">
+             Puntos Acumulados
+          </a>
+          <a routerLink="/perfil/canjes"
+             routerLinkActive="profile__nav-link--activo"
+             class="profile__nav-link">
+             Historial de Canjes
+          </a>
+          <a routerLink="/perfil/cupones"
+             routerLinkActive="profile__nav-link--activo"
+             class="profile__nav-link">
+             Mis Cupones
+          </a>
+          <a routerLink="/perfil/peliculas"
+             routerLinkActive="profile__nav-link--activo"
+             class="profile__nav-link">
+             Mis Películas
+          </a>
+        </nav>
+
+        <button class="profile__btn-logout" (click)="cerrarSesion()">Cerrar Sesión</button>
+      </aside>
+
+      <!-- CONTENIDO DINÁMICO (acá se renderizan los hijos) -->
+      <main class="profile__content-area">
+        <router-outlet></router-outlet>
+      </main>
+
+    </div>
+  }
+</section>

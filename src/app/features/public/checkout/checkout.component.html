@@ -1,0 +1,116 @@
+<main class="checkout l-container">
+  <div class="checkout__layout">
+
+    <!-- COLUMNA IZQUIERDA: FORMULARIO DE PAGO -->
+    <div class="checkout__main">
+      <header class="checkout__header">
+        <h1 class="checkout__title">FINALIZAR COMPRA</h1>
+      </header>
+
+      <form [formGroup]="checkoutForm" (ngSubmit)="procesarPago()" class="payment-form">
+        <h2 class="payment-form__subtitle">Datos del Titular</h2>
+
+        <div class="payment-form__group">
+          <label class="payment-form__label">Nombre Completo</label>
+          <input type="text" formControlName="nombre" class="payment-form__input" placeholder="Como aparece en la tarjeta">
+        </div>
+
+        <div class="payment-form__group">
+          <label class="payment-form__label">Correo Electrónico (Para enviar el ticket)</label>
+          <input type="email" formControlName="email" class="payment-form__input" placeholder="ejemplo@correo.com">
+        </div>
+
+        <h2 class="payment-form__subtitle">Datos de la Tarjeta</h2>
+        <div class="payment-form__group">
+          <label class="payment-form__label">Número de Tarjeta</label>
+          <input type="text" formControlName="tarjeta" class="payment-form__input" placeholder="1234 5678 9101 1121" maxlength="16">
+        </div>
+
+        <div class="payment-form__row">
+          <div class="payment-form__group">
+            <label class="payment-form__label">Vencimiento</label>
+            <input type="text" formControlName="vencimiento" class="payment-form__input" placeholder="MM/YY" maxlength="5">
+          </div>
+          <div class="payment-form__group">
+            <label class="payment-form__label">Código CVC</label>
+            <input type="text" formControlName="cvc" class="payment-form__input" placeholder="123" maxlength="4">
+          </div>
+        </div>
+
+        <button type="submit" class="payment-form__btn" [disabled]="procesando()">
+          {{ procesando() ? 'PROCESANDO...' : 'PAGAR $ ' + (totalPagar() | number:'1.0-0') }}
+        </button>
+      </form>
+    </div>
+
+    <!-- COLUMNA DERECHA: RESUMEN LEYENDO DEL STATE GLOBAL -->
+    <aside class="checkout__aside">
+      <div class="summary-card">
+        <h3 class="summary-card__title">Resumen de Compra</h3>
+
+        <div class="summary-list">
+          <div class="summary-item">
+            <span>Entradas ({{ butacas().length }})</span>
+            <span>$ {{ subtotalEntradas() | number:'1.0-0' }}</span>
+          </div>
+
+          <div class="summary-item summary-item--small">
+            <span>Butacas seleccionadas:</span>
+            <span class="summary-item__seats">
+              @for (b of butacas(); track b.id; let last = $last) {
+                {{ b.fila }}{{ b.columna }}{{ !last ? ', ' : '' }}
+              }
+            </span>
+          </div>
+
+          @if (combos().length > 0) {
+            <div class="summary-divider"></div>
+            @for (combo of combos(); track combo.id) {
+              <div class="summary-item">
+                <span>{{ combo.cantidad }}x {{ combo.nombre }}</span>
+                <span>$ {{ (combo.cantidad * combo.precioUnitario) | number:'1.0-0' }}</span>
+              </div>
+            }
+          }
+
+          <div class="summary-divider"></div>
+          <div class="summary-item">
+            <span>Cargo de Servicio</span>
+            <span>$ {{ cargoServicio() | number:'1.0-0' }}</span>
+          </div>
+
+          <!-- Módulo de Ingreso de Cupón -->
+          <div class="summary-divider"></div>
+          <div class="coupon-section">
+            <div class="coupon-group">
+              <input type="text" [formControl]="cuponControl" placeholder="Código de descuento" class="payment-form__input coupon-group__input">
+              <button type="button" class="coupon-group__btn" (click)="aplicarCupon()" [disabled]="validandoCupon() || !cuponControl.value">
+                {{ validandoCupon() ? '...' : 'Aplicar' }}
+              </button>
+            </div>
+            @if (cuponMensaje()) {
+              <span class="coupon-msg" [class.coupon-msg--error]="cuponMensaje()?.tipo === 'error'" [class.coupon-msg--success]="cuponMensaje()?.tipo === 'exito'">
+                {{ cuponMensaje()?.texto }}
+              </span>
+            }
+          </div>
+
+          <!-- Renderizado del descuento dinámico -->
+          @if (montoDescuento() > 0) {
+            <div class="summary-divider"></div>
+            <div class="summary-item summary-item--discount">
+              <span>Descuento ({{ descuentoPorcentaje() }}%)</span>
+              <span>- $ {{ montoDescuento() | number:'1.0-0' }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="summary-total">
+          <span class="summary-total__label">TOTAL</span>
+          <span class="summary-total__price">$ {{ totalPagar() | number:'1.0-0' }}</span>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</main>

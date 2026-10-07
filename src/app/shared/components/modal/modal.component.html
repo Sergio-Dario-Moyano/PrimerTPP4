@@ -1,0 +1,41 @@
+@if (isOpen()) {
+  <div class="modal-overlay" (click)="cerrar()">
+    <!-- stopPropagation evita que al hacer clic DENTRO de la tarjeta se cierre el modal -->
+    <div class="modal-tarjeta" (click)="$event.stopPropagation()">
+
+      <!-- Cabecera dinámica según el tipo -->
+      <div class="modal-cabecera" [class]="'tipo-' + tipo()">
+
+       <!-- 💡 Reemplazamos los @if repetitivos por un @switch más eficiente -->
+        @switch (tipo()) {
+          @case ('success') {
+            <svg class="modal-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          @case ('error') {
+            <svg class="modal-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+          @case ('info') {
+            <svg class="modal-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+        }
+
+        <h3 class="modal-titulo">{{ titulo() }}</h3>
+      </div>
+
+      <div class="modal-cuerpo">
+        <p>{{ mensaje() }}</p>
+      </div>
+
+      <div class="modal-pie">
+        <button class="btn-cerrar" (click)="cerrar()">Entendido</button>
+      </div>
+
+    </div>
+  </div>
+}

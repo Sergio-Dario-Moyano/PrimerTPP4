@@ -1,0 +1,36 @@
+<section class="puntos">
+  <h3 class="puntos__subtitle">Programa de Beneficios</h3>
+
+  @if (cargando()) {
+    <div class="puntos__estado">
+      <div class="pulse-dot pulse-dot-loading"></div>
+      <p>Calculando tu saldo de puntos...</p>
+    </div>
+  } @else if (error()) {
+    <div class="puntos__estado puntos__estado--error">
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+    <div class="tarjeta-vip">
+      <div class="tarjeta-vip__header">
+        <h4 class="tarjeta-vip__titulo">Puntos Acumulados</h4>
+      </div>
+
+      <div class="tarjeta-vip__body">
+        <span class="tarjeta-vip__numero">{{ puntosAcumulados() | number:'1.0-0' }}</span>
+        <span class="tarjeta-vip__unidad">pts</span>
+      </div>
+
+      <div class="tarjeta-vip__footer">
+        <p class="tarjeta-vip__info">
+          ¡Sigue sumando! Acumulas <strong>1 punto por cada $1</strong> gastado en entradas.
+        </p>
+      </div>
+    </div>
+
+    <!-- Mensaje de motivación -->
+    <div class="puntos__accion">
+      <p>Pronto podrás canjear estos puntos por combos exclusivos en nuestro Candy Bar.</p>
+    </div>
+  }
+</section>

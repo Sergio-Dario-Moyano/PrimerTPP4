@@ -1,0 +1,130 @@
+<main class="detalle-layout">
+  @if (cargando()) {
+    <div class="detalle-layout__carga">
+      <div class="pulse-dot pulse-dot-loading"></div>
+    </div>
+  } @else if (pelicula()) {
+
+    <!-- HERO / CABECERA AL 100% DE ANCHO -->
+    <header class="detalle-cabecera">
+      <div class="detalle-cabecera__fondo" [style.backgroundImage]="'url(' + (pelicula()!.hero_imagen || pelicula()!.poster_url) + ')'"></div>
+      <div class="detalle-cabecera__overlay"></div>
+
+      <!-- CONTENEDOR INTERNO RESTRINGIDO A 1200PX -->
+      <div class="detalle-cabecera__contenedor l-container">
+        <img [src]="pelicula()!.poster_url" [alt]="pelicula()!.titulo" class="detalle-cabecera__poster">
+
+        <div class="detalle-cabecera__info">
+          <h1 class="detalle-cabecera__titulo">{{ pelicula()!.titulo }}</h1>
+
+          <div class="detalle-cabecera__tags">
+            <span class="detalle-cabecera__tag detalle-cabecera__tag--duracion">{{ pelicula()!.duracion }} min</span>
+            <span class="detalle-cabecera__tag detalle-cabecera__tag--edad">{{ pelicula()!.clasificacion }}</span>
+            <span class="detalle-cabecera__tag detalle-cabecera__tag--genero">{{ pelicula()!.generos.join(', ') }}</span>
+          </div>
+
+          <!-- Módulo de Puntuación Promedio -->
+          <div class="puntuacion-promedio">
+            <span class="puntuacion-promedio__numero">{{ promedioEstrellas() > 0 ? promedioEstrellas() : 'S/N' }}</span>
+            <div class="puntuacion-promedio__estrellas">
+              @for (estrella of estrellasArray; track estrella) {
+                <svg class="puntuacion-promedio__icono"
+                     [class.puntuacion-promedio__icono--activa]="estrella <= promedioEstrellas()"
+                     viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              }
+            </div>
+            <span class="puntuacion-promedio__total">({{ resenas().length }} reseñas)</span>
+          </div>
+
+          <p class="detalle-cabecera__sinopsis">{{ pelicula()!.sinopsis }}</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- CUERPO PRINCIPAL RESTRINGIDO A 1200PX -->
+    <div class="l-container detalle-cuerpo">
+
+      <!-- Detalle de los horarios -->
+      <app-funciones-pelicula
+        [funciones]="funciones()"
+        (onSeleccionar)="navegarASala($event)">
+      </app-funciones-pelicula>
+
+      <!-- Sistema de Reseñas -->
+      <section class="seccion-resenas">
+        <h2 class="seccion-resenas__titulo">Opiniones del Público</h2>
+
+        <!-- Validación de estados para el formulario -->
+        <div class="caja-formulario">
+          @if (estadoResena() === 'puede_comentar') {
+            <form class="formulario-resena" [formGroup]="resenaForm" (ngSubmit)="enviarResena()">
+              <h4 class="formulario-resena__titulo">Deja tu calificación</h4>
+
+              <div class="formulario-resena__selector-estrellas">
+                @for (num of estrellasArray; track num) {
+                  <button type="button" class="formulario-resena__btn-estrella"
+                          (click)="setCalificacionForm(num)"
+                          [class.formulario-resena__btn-estrella--seleccionada]="num <= (resenaForm.controls.calificacion.value || 0)">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </button>
+                }
+              </div>
+
+              <textarea class="formulario-resena__input" formControlName="comentario" placeholder="¿Qué te pareció la película? Escribe un comentario corto..." rows="3"></textarea>
+
+              <button type="submit" class="formulario-resena__submit" [disabled]="enviando() || resenaForm.invalid">
+                {{ enviando() ? 'Publicando...' : 'Publicar Reseña' }}
+              </button>
+            </form>
+
+          } @else if (estadoResena() === 'ya_comentada') {
+            <div class="mensaje-estado mensaje-estado--exito">
+              <p>Ya dejaste tu opinión sobre esta película. ¡Gracias!</p>
+            </div>
+
+          } @else if (estadoResena() === 'no_vista') {
+            <div class="mensaje-estado mensaje-estado--pendiente">
+              <p>Debes asistir a una función de esta película para poder reseñarla.</p>
+            </div>
+
+          } @else if (estadoResena() === 'no_logueado') {
+            <div class="mensaje-estado mensaje-estado--login">
+              <p>Debes iniciar sesión para calificar esta película.</p>
+              <a routerLink="/login" class="mensaje-estado__link">Ingresar ahora</a>
+            </div>
+          }
+        </div>
+
+        <!-- Listado de Reseñas -->
+        <div class="lista-resenas">
+          @for (resena of resenas(); track resena.id) {
+            <article class="tarjeta-resena">
+              <div class="tarjeta-resena__cabecera">
+                <span class="tarjeta-resena__autor">{{ resena.perfiles?.nombre }} {{ resena.perfiles?.apellido }}</span>
+                <div class="tarjeta-resena__estrellas">
+                  @for (estrella of estrellasArray; track estrella) {
+                    <svg class="tarjeta-resena__estrella"
+                         [class.tarjeta-resena__estrella--activa]="estrella <= resena.calificacion"
+                         viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  }
+                </div>
+              </div>
+              <p class="tarjeta-resena__comentario">"{{ resena.comentario }}"</p>
+              <span class="tarjeta-resena__fecha">{{ resena.fecha | date:'dd/MM/yyyy' }}</span>
+            </article>
+
+          } @empty {
+            <p class="lista-resenas__vacia">Todavía no hay opiniones. ¡Sé el primero en comentar!</p>
+          }
+        </div>
+
+      </section>
+    </div>
+  }
+</main>

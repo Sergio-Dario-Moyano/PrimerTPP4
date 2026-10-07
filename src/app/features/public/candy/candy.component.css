@@ -1,0 +1,250 @@
+:host {
+  display: block;
+  /* Variables alineadas con tu paleta global */
+  --bg-base: #121212;
+  --bg-surface: #1e1e1e;
+  --text-light: #ffffff;
+  --text-muted: #b3b3b3;
+  --accent-color: #f5b301;
+  --border-color: #333333;
+  --danger-color: #dc2626;
+  --shadow-sm: 0 4px 6px rgba(0,0,0,0.3);
+  --shadow-md: 0 8px 15px rgba(0,0,0,0.5);
+}
+
+/* =========================================================
+   ESTRUCTURA PRINCIPAL
+   ========================================================= */
+.candy {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  color: var(--text-light);
+}
+
+.l-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  box-sizing: border-box;
+}
+
+.candy__layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.candy__main {
+  width: 100%;
+  min-width: 0;
+}
+
+/* =========================================================
+   ENCABEZADO
+   ========================================================= */
+.candy__header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.candy__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-light);
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.candy__subtitle {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   GRILLA DE PRODUCTOS
+   ========================================================= */
+.candy__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.product-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent-color);
+}
+
+.product-card__image-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background-color: #141414;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.product-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-card__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background-color: var(--danger-color);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.product-card__info {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 0.75rem;
+}
+
+.product-card__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.product-card__desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  flex-grow: 1;
+}
+
+/* =========================================================
+   ACCIONES Y CONTROLES (Agregar / Quitar)
+   ========================================================= */
+.product-card__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.product-card__price {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--accent-color);
+}
+
+.product-card__btn-add {
+  background-color: var(--accent-color);
+  color: #000;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.product-card__btn-add:hover {
+  background-color: #ffc11c;
+  transform: translateY(-2px);
+}
+
+/* Selector de cantidad (+ / -) */
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  background-color: #141414;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.quantity-controls__btn {
+  background-color: transparent;
+  border: none;
+  color: var(--accent-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quantity-controls__btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.quantity-controls__number {
+  font-weight: 700;
+  color: var(--text-light);
+  min-width: 32px;
+  text-align: center;
+}
+
+/* =========================================================
+   RESUMEN DE COMPRA (Aside)
+   ========================================================= */
+.candy__summary {
+  width: 100%;
+}
+
+/* =========================================================
+   MEDIA QUERIES (Responsividad)
+   ========================================================= */
+@media (min-width: 600px) {
+  .candy__grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .candy__layout {
+    grid-template-columns: 1fr 360px; /* Le da 360px fijos al resumen de la derecha */
+    gap: 3rem;
+  }
+
+  .candy__header .candy__title {
+    font-size: 1.8rem;
+  }
+
+  .candy__summary {
+    position: sticky;
+    top: 2rem; /* El resumen se queda pegado al hacer scroll hacia abajo */
+  }
+}

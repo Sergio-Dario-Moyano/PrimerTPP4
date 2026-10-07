@@ -1,0 +1,112 @@
+<app-age-warning-modal
+  [isOpen]="modalEdadAbierto()"
+  [esMenorRegistrado]="esMenorRegistrado()"
+  [restriccionEdad]="restriccionActual()"
+  (confirmar)="cerrarModalEdad(false)"
+  (cancelar)="cerrarModalEdad(true)">
+</app-age-warning-modal>
+
+<!-- 💡 Agregamos l-container para respetar la regla de los 1200px max -->
+<main class="book-seats l-container">
+
+  @if (cargando()) {
+    <div class="book-seats__loading">
+      <div class="pulse-dot pulse-dot-loading"></div>
+      <h2>Cargando sala...</h2>
+    </div>
+  } @else {
+    <header class="book-seats__header">
+      <h1 class="book-seats__title">Elige tus Asientos</h1>
+      <div class="book-seats__subtitle">
+        <span>{{ pelicula()?.titulo }}</span>
+        <span class="book-seats__dot">•</span>
+        <span class="book-seats__highlight">
+          Fecha: {{ horarioUI() | date:'dd/MM/yyyy' }} ·
+          Hora: {{horarioUI() | date: 'HH:mm'}} ·
+          Formato: {{ pelicula()?.formatos?.[0] || '2D' }} ·
+          Sala: {{ salaUI() }}
+        </span>
+      </div>
+    </header>
+
+    <div class="book-seats__grid">
+      <!-- MAPA DE ASIENTOS -->
+      <section class="seat-map">
+        <div class="seat-map__scroll-container">
+
+          <div class="seat-map__screen">
+            <div class="seat-map__screen-curve"></div>
+            <span class="seat-map__screen-text">PANTALLA</span>
+          </div>
+
+          <!-- GRILLA DE BUTACAS -->
+          <div class="seat-map__rows">
+            @for (group of rowGroups(); track group.row) {
+              <div class="seat-row">
+                <span class="seat-row__label">{{ group.row }}</span>
+
+                <div class="seat-row__cells">
+                  @for (cell of group.cells; track $index) {
+
+                    @if (cell.type === 'aisle') {
+                      <div class="seat-cell seat-cell--aisle"></div>
+                    } @else if (cell.type === 'empty') {
+                      <div class="seat-cell seat-cell--empty"></div>
+                    } @else if (cell.seat) {
+                      <button class="seat-cell seat-cell--btn"
+                              [ngClass]="['seat-cell--' + cell.seat.type, 'seat-cell--' + cell.seat.status]"
+                              [disabled]="cell.seat.status === 'occupied'"
+                              (click)="toggleSeat(cell.seat.id)"
+                              [title]="cell.seat.codigo + ' - ' + cell.seat.type">
+
+                        @if (cell.seat.type === 'accessible' && cell.seat.status !== 'occupied') {
+                          <span class="seat-cell__icon">♿</span>
+                        }
+                        @if (cell.seat.type === 'vip' && cell.seat.status === 'free') {
+                          <span class="seat-cell__icon">★</span>
+                        }
+                      </button>
+                    }
+                  }
+                </div>
+
+                <span class="seat-row__label">{{ group.row }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- LEYENDA -->
+        <div class="seat-legend">
+          <div class="seat-legend__item"><span class="seat-cell seat-cell--legend seat-cell--standard"></span> Disponible</div>
+          <div class="seat-legend__item"><span class="seat-cell seat-cell--legend seat-cell--occupied"></span> Ocupado</div>
+          <div class="seat-legend__item"><span class="seat-cell seat-cell--legend seat-cell--selected"></span> Seleccionado</div>
+          <div class="seat-legend__item"><span class="seat-cell seat-cell--legend seat-cell--vip"><span class="seat-cell__icon">★</span></span> VIP</div>
+          <div class="seat-legend__item"><span class="seat-cell seat-cell--legend seat-cell--accessible"><span class="seat-cell__icon">♿</span></span> Accesible</div>
+        </div>
+      </section>
+
+      <!-- RESUMEN LATERAL -->
+      <aside class="book-seats__summary">
+        <app-resumen-compra
+          [pelicula]="{
+            titulo: pelicula()?.titulo || '',
+            formato: pelicula()?.formatos?.[0] || '2D',
+            posterUrl: pelicula()?.poster_url || ''
+          }"
+          [funcion]="{
+            cine: 'Complejo Lanús',
+            sala: salaUI() || '',
+            fechaFormateada: (horarioUI() | date:'dd/MM/yyyy') || '',
+            horaFormateada: (horarioUI() | date: 'HH:mm') || ''
+          }"
+          [butacas]="nombresButacas()"
+          [entradas]="resumenEntradas()"
+          [cargoServicioEntradas]="cargoServicio()"
+          [deshabilitarContinuar]="selected().length === 0"
+          (onContinuar)="confirmarSeleccion()">
+        </app-resumen-compra>
+      </aside>
+    </div>
+  }
+</main>

@@ -1,0 +1,173 @@
+/* =========================================
+   BLOQUE BASE Y ESTADOS
+   ========================================= */
+.puntos {
+  animation: fadeIn 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  box-sizing: border-box; /* Evita que el contenedor desborde */
+}
+
+.puntos__subtitle {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-secondary, #e50914);
+  text-align: center; /* Mejor alineación en celular */
+}
+
+.puntos__estado {
+  text-align: center;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 2rem 1rem; /* Reducido para móvil */
+  color: #94a3b8;
+  font-size: 1rem;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-sizing: border-box;
+}
+
+.puntos__estado--error {
+  border-color: #ef4444;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.puntos__estado p {
+  margin: 0;
+}
+
+/* =========================================
+   TARJETA VIP DE PUNTOS
+   ========================================= */
+.tarjeta-vip {
+  /* Degradado premium */
+  background: linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1.5rem; /* Padding más seguro para celulares */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  max-width: 450px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box; /* CRUCIAL: Evita que el padding sume ancho extra */
+}
+
+/* Brillo superior tipo tarjeta de crédito */
+.tarjeta-vip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-secondary, #e50914), #ff4b4b);
+}
+
+.tarjeta-vip__titulo {
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.85rem;
+  margin: 0 0 1rem 0;
+}
+
+.tarjeta-vip__body {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  white-space: nowrap; /* Fuerza a que "numero" y "pts" esten en la misma linea */
+}
+
+.tarjeta-vip__numero {
+  font-size: 2.2rem; /* Tamaño más chico para que no se corte en móvil */
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  text-shadow: 0 4px 10px rgba(229, 9, 20, 0.4);
+}
+
+.tarjeta-vip__unidad {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--color-secondary, #e50914);
+}
+
+.tarjeta-vip__info {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.tarjeta-vip__info strong {
+  color: #ffffff;
+}
+
+/* =========================================
+   SECCIÓN INFERIOR
+   ========================================= */
+.puntos__accion {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  border-top: 1px dashed #334155;
+  padding-top: 1.5rem;
+  max-width: 450px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   MEDIA QUERIES (PC y Tablets)
+   ========================================= */
+@media (min-width: 768px) {
+  .puntos__subtitle {
+    text-align: left;
+  }
+
+  .tarjeta-vip {
+    padding: 2.5rem 2rem; /* Recupera el padding amplio en PC */
+  }
+
+  .tarjeta-vip__titulo {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .tarjeta-vip__body {
+    margin-bottom: 2rem;
+  }
+
+  .tarjeta-vip__numero {
+    font-size: 4.5rem; /* Vuelve al tamaño de fuente grande original */
+  }
+
+  .tarjeta-vip__unidad {
+    font-size: 1.5rem;
+  }
+
+  .tarjeta-vip__info {
+    font-size: 0.95rem;
+  }
+
+  .puntos__accion {
+    font-size: 1.05rem;
+  }
+}

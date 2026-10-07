@@ -1,0 +1,166 @@
+/* =========================================
+   BLOQUE BASE Y ESTADOS
+   ========================================= */
+.mis-entradas {
+  animation: fadeIn 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.mis-entradas__title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-secondary, #e50914);
+}
+
+.mis-entradas__status,
+.mis-entradas__empty {
+  text-align: center;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mis-entradas__empty {
+  border-style: dashed;
+}
+
+.mis-entradas__status--error {
+  border-color: #ef4444;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.mis-entradas__status p,
+.mis-entradas__empty p {
+  margin: 0;
+}
+
+/* =========================================
+   GRILLA Y TARJETAS
+   ========================================= */
+.mis-entradas__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.purchase-card {
+  background: linear-gradient(135deg, #1e1e1e 0%, #121212 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Brillo superior en degradado rojo */
+.purchase-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-secondary, #e50914), #ff4b4b);
+}
+
+.purchase-card:hover {
+  transform: translateY(-4px);
+  border-color: #475569;
+  box-shadow: 0 14px 25px rgba(0, 0, 0, 0.6);
+}
+
+.purchase-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.purchase-card__details p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+}
+
+.purchase-card__date {
+  font-weight: 600;
+  color: #fff !important;
+  border-bottom: 1px dashed #334155;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem !important;
+}
+
+.purchase-card__details p strong {
+  color: #fff;
+}
+
+.purchase-card__highlight {
+  color: #f59e0b;
+  font-weight: bold;
+}
+
+/* ESTADOS DE LA COMPRA */
+.purchase-card__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.purchase-card__badge {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 1px solid #10b981;
+}
+
+.purchase-card__badge--cancelada {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+/* =========================================
+   BOTONES
+   ========================================= */
+.mis-entradas__btn-primary {
+  display: block;
+  background-color: var(--color-secondary, #e50914);
+  color: #ffffff;
+  text-decoration: none;
+  text-align: center;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+}
+
+.mis-entradas__btn-primary:hover {
+  background-color: #b80710;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

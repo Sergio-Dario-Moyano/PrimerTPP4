@@ -1,0 +1,39 @@
+<section class="mis-peliculas">
+  <h3 class="mis-peliculas__subtitle">Mis Películas</h3>
+
+  @if (cargando()) {
+    <div class="mis-peliculas__estado">
+      <div class="pulse-dot pulse-dot-loading"></div>
+      <p>Cargando tu historial de cine...</p>
+    </div>
+  } @else if (error()) {
+    <div class="mis-peliculas__estado mis-peliculas__estado--error">
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+
+    @if (peliculas().length === 0) {
+      <div class="mis-peliculas__empty">
+        <p>Aún no tienes películas en tu historial. ¡Ve a la cartelera para comprar tu primera entrada!</p>
+      </div>
+    } @else {
+      <div class="mis-peliculas__grid">
+        @for (peli of peliculas(); track peli.id) {
+          <article class="pelicula-card">
+            <div class="pelicula-card__img-wrapper">
+              <img
+                [src]="peli.url_imagen"
+                [alt]="'Póster de ' + peli.titulo"
+                class="pelicula-card__img"
+                onerror="this.src='https://via.placeholder.com/300x450/1e293b/94a3b8?text=Poster+No+Disponible'">
+            </div>
+            <div class="pelicula-card__info">
+              <h4 class="pelicula-card__titulo">{{ peli.titulo }}</h4>
+            </div>
+          </article>
+        }
+      </div>
+    }
+
+  }
+</section>

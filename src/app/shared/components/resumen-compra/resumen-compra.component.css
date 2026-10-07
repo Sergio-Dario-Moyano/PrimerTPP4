@@ -1,0 +1,231 @@
+:host {
+  display: block;
+}
+
+/* Contenedor Principal de la Tarjeta */
+.resumen {
+  background-color: var(--bg-surface, #1e1e1e);
+  border: 1px solid var(--border-color, #333333);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  color: #ffffff;
+  overflow: hidden; /* Importante para que no sobresalgan elementos */
+}
+
+/* Título de la sección */
+.resumen__titulo {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+  color: #ffffff;
+}
+
+/* Sección de Película (Poster + Título) */
+.resumen__pelicula {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.resumen__poster {
+  width: 75px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.resumen__peli-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.resumen__peli-titulo {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #ffffff;
+}
+
+.resumen__badge {
+  align-self: flex-start;
+  background-color: #333333;
+  color: #ffffff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* Información de la Función */
+.resumen__funcion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  font-size: 0.9rem;
+  color: #a1a1aa;
+}
+
+.resumen__funcion p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.resumen__icono {
+  font-size: 1rem;
+}
+
+/* =========================================================
+   SEPARADOR TIPO TICKET (Línea punteada y semicírculos)
+   ========================================================= */
+.resumen__separador {
+  position: relative;
+  height: 1px;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+  /* El margen negativo expande la línea hasta los bordes de la tarjeta */
+  margin: 2rem -1.5rem;
+}
+
+/* Semicírculo Izquierdo */
+.resumen__separador::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  background-color: var(--bg-base, #121212); /* Debe coincidir con el fondo de tu web */
+  border-right: 1px solid var(--border-color, #333333);
+  border-radius: 50%;
+}
+
+/* Semicírculo Derecho */
+.resumen__separador::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background-color: var(--bg-base, #121212);
+  border-left: 1px solid var(--border-color, #333333);
+  border-radius: 50%;
+}
+
+.resumen__separador--sutil {
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+  margin: 1.5rem 0; /* Este no llega a los bordes, es solo interno */
+}
+.resumen__separador--sutil::before,
+.resumen__separador--sutil::after {
+  display: none; /* Quitamos los recortes laterales del sutil */
+}
+
+/* =========================================================
+   DESGLOSE (Asientos, Entradas, Confitería)
+   ========================================================= */
+.resumen__desglose {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen__subtitulo {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: #ffffff;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.resumen__vacio {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666666;
+  font-style: italic;
+}
+
+.resumen__butacas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.resumen__butaca-badge {
+  background-color: var(--accent-color, #f5b301);
+  color: #000000;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+}
+
+.resumen__fila {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  margin-bottom: 0.7rem;
+  color: #cccccc;
+}
+
+.resumen__fila--cargo {
+  color: #888888;
+  font-size: 0.85rem;
+}
+
+/* =========================================================
+   TOTAL Y BOTÓN
+   ========================================================= */
+.resumen__total {
+  display: flex;
+  flex-direction: column;
+}
+
+.resumen__fila-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.resumen__label-tot {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.resumen__precio-final {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--accent-color, #f5b301);
+}
+
+.resumen__btn {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.05rem;
+  background-color: var(--accent-color, #f5b301);
+  color: #000000;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Estilo para botón deshabilitado según la captura */
+.resumen__btn:disabled {
+  background-color: #333333;
+  color: #777777;
+  cursor: not-allowed;
+}
+
+.resumen__btn:not(:disabled):hover {
+  background-color: #ffc11c;
+  transform: translateY(-2px);
+}

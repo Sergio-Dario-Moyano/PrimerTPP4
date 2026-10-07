@@ -1,0 +1,457 @@
+:host {
+  display: block;
+  --bg-base: #121212;
+  --ticket-bg: #fdfdfd;
+  --ticket-text: #111111;
+  --ticket-muted: #555555;
+  --accent-color: #f5b301;
+}
+
+/* =========================================
+   CONTENEDOR GLOBAL
+   ========================================= */
+.ticket-view {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  background-color: var(--bg-base);
+}
+
+/* Estados de carga y error */
+.ticket__loading, .ticket__error {
+  background-color: #1e1e1e;
+  color: white;
+  padding: 3rem 2rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid #333;
+  width: 100%;
+  max-width: 400px;
+}
+
+.pulse-dot-loading {
+  background-color: var(--accent-color);
+  width: 15px;
+  height: 15px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 179, 1, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(245, 179, 1, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 179, 1, 0); }
+}
+
+/* =========================================
+   DISEÑO DEL TICKET FÍSICO
+   ========================================= */
+.ticket-card {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 2px solid #94a3b8 !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  font-family: 'Courier New', Courier, monospace, sans-serif !important;
+  position: relative;
+}
+
+/* =========================================
+   RECORTES LATERALES Y LÍNEAS PUNTEADAS
+   ========================================= */
+.ticket-card__divider {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  background-image: linear-gradient(to right, #94a3b8 50%, transparent 50%) !important;
+  background-size: 10px 2px !important;
+  background-repeat: repeat-x !important;
+  margin: 0;
+  z-index: 1;
+}
+
+.ticket-card__divider::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -2px;
+  width: 12px;
+  height: 24px;
+  background-color: #121212 !important;
+  border: 2px solid #94a3b8 !important;
+  border-left: none !important;
+  border-radius: 0 24px 24px 0 !important;
+  z-index: 10;
+}
+
+.ticket-card__divider::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  right: -2px;
+  width: 12px;
+  height: 24px;
+  background-color: #121212 !important;
+  border: 2px solid #94a3b8 !important;
+  border-right: none !important;
+  border-radius: 24px 0 0 24px !important;
+  z-index: 10;
+}
+
+/* =========================================
+   SECCIONES DEL TICKET (Padding interno)
+   ========================================= */
+.ticket-card__header,
+.ticket-card__body,
+.ticket-card__footer {
+  padding: 2rem;
+}
+
+/* =========================================
+   CABECERA
+   ========================================= */
+.ticket-card__header {
+  text-align: center;
+  padding-bottom: 1.5rem;
+}
+
+.ticket-card__brand {
+  margin: 0 0 1rem 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #555555 !important;
+}
+
+.ticket-card__title {
+  margin: 0 0 1rem 0;
+  font-family: system-ui, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #000000 !important;
+}
+
+.ticket-card__client {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+}
+
+.ticket-card__code {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* =========================================
+   CUERPO Y DATOS DE LA PELÍCULA
+   ========================================= */
+.ticket-card__movie-info {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.ticket-card__movie-title {
+  font-family: system-ui, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.1;
+  color: #000000 !important;
+}
+
+.ticket-card__datetime {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ticket-card__data-box {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #cbd5e1 !important;
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+}
+
+.ticket-card__data-box span {
+  font-size: 0.7rem;
+  color: #555555 !important;
+  font-weight: bold;
+}
+
+.ticket-card__data-box strong {
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+  color: #000000 !important;
+}
+
+.ticket-card__warning {
+  background-color: #ffffff !important;
+  border: 1px dashed #ef4444 !important;
+  color: #b91c1c !important;
+  padding: 0.8rem;
+  font-size: 0.8rem;
+  font-family: system-ui, sans-serif;
+  font-weight: bold;
+}
+
+/* =========================================
+   LISTA DE BUTACAS Y COMBOS
+   ========================================= */
+.ticket-card__section {
+  margin-bottom: 2rem;
+}
+
+.ticket-card__subtitle {
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  border-bottom: 2px solid #e2e8f0 !important;
+  padding-bottom: 0.3rem;
+  margin: 0 0 1rem 0;
+  color: #000000 !important;
+  font-weight: bold;
+}
+
+.ticket-card__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ticket-card__list-item {
+  background-color: #111111 !important;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  display: flex;
+  gap: 0.8rem;
+  color: #ffffff !important;
+  border-top: 3px solid #facc15 !important;
+}
+
+.ticket-card__list-item span {
+  color: #cccccc !important;
+}
+
+.ticket-card__list-item strong {
+  font-size: 1.1rem;
+  color: #ffffff !important;
+}
+
+.ticket-card__combo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.95rem;
+  color: #000000 !important;
+}
+
+.ticket-card__combo-list li {
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed #cbd5e1 !important;
+}
+
+/* =========================================
+   SECCIÓN CÓDIGO QR
+   ========================================= */
+.ticket-card__qr-section {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.ticket-card__qr-instructions {
+  font-size: 0.85rem;
+  color: #555555 !important;
+  margin: 0 0 1rem 0;
+}
+
+.ticket-card__qr-wrapper {
+  background-color: #ffffff !important;
+  padding: 10px;
+  display: inline-block;
+  border: 1px solid #cbd5e1 !important;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+}
+
+.ticket-card__manual-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ticket-card__manual-code span {
+  font-size: 0.75rem;
+  color: #555555 !important;
+}
+
+.ticket-card__highlight {
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #000000 !important;
+}
+
+/* =========================================
+   FOOTER Y TOTAL
+   ========================================= */
+.ticket-card__footer {
+  text-align: center;
+  padding-top: 1.5rem;
+}
+
+.ticket-card__total {
+  font-family: system-ui, sans-serif;
+  font-size: 1.2rem;
+  margin: 0 0 1rem 0;
+  color: #000000 !important;
+}
+
+.ticket-card__total strong {
+  font-size: 1.5rem;
+}
+
+.ticket-card__email {
+  font-size: 0.8rem;
+  color: #555555 !important;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* =========================================
+   BOTONES DE ACCIÓN
+   ========================================= */
+.ticket-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 2rem;
+  font-family: system-ui, sans-serif;
+}
+
+.ticket__btn {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  border: none;
+}
+
+.ticket__btn--primary {
+  background-color: #111;
+  color: #fff;
+}
+
+.ticket__btn--secondary {
+  background-color: var(--accent-color);
+  color: #000;
+}
+
+.ticket__btn--danger {
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.ticket-card__badge-cancel {
+  background-color: #ef4444;
+  color: white;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* =========================================
+   MODAL DE CANCELACIÓN CENTRADO (Responsive)
+   ========================================= */
+.cancel-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.cancel-modal-container {
+  background-color: #1e1e1e;
+  border: 1px solid #333333;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  animation: modalScaleIn 0.25s ease-out;
+}
+
+.cancel-modal-container h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.cancel-modal-container p {
+  margin: 0 0 1.5rem 0;
+  color: #a1a1aa;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.cancel-modal-container p strong {
+  color: #facc15;
+}
+
+.cancel-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (min-width: 480px) {
+  .cancel-modal-actions {
+    flex-direction: row;
+  }
+}

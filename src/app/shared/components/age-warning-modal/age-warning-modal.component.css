@@ -1,0 +1,118 @@
+.age-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.age-warning__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.age-warning__dialog {
+  position: relative;
+  background-color: #1e293b; /* Ajustado a tonos oscuros de cine */
+  color: #f8fafc;
+  width: 90%;
+  max-width: 450px;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  border: 1px solid #334155;
+}
+
+.age-warning__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.age-warning__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-radius: 50%;
+}
+
+.age-warning__icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.age-warning__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.age-warning__body {
+  margin-bottom: 24px;
+}
+
+.age-warning__message {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.age-warning__message strong {
+  color: #f8fafc;
+  display: block;
+  margin-top: 8px;
+}
+
+.age-warning__message--error {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.age-warning__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.age-warning__btn {
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.age-warning__btn--secondary {
+  background-color: #334155;
+  color: #f8fafc;
+}
+
+.age-warning__btn--secondary:hover {
+  background-color: #475569;
+}
+
+.age-warning__btn--primary {
+  background-color: #059669; /* Verde esmeralda para continuar */
+  color: #ffffff;
+}
+
+.age-warning__btn--primary:hover {
+  background-color: #047857;
+}

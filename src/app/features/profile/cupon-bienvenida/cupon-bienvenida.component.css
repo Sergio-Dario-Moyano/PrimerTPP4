@@ -1,0 +1,72 @@
+/* =========================================
+   BLOQUE BASE Y ESTADOS
+   ========================================= */
+.cupon-bienvenida {
+  animation: fadeIn 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.cupon-bienvenida__subtitle {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-secondary, #e50914);
+}
+
+.cupon-bienvenida__status,
+.cupon-bienvenida__empty {
+  text-align: center;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cupon-bienvenida__empty {
+  border-style: dashed;
+}
+
+.cupon-bienvenida__status--error {
+  border-color: #ef4444;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.cupon-bienvenida__status p,
+.cupon-bienvenida__empty p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* =========================================
+   TARJETA CUPÓN (MOBILE FIRST)
+   ========================================= */
+.tarjeta-cupon {
+  background: linear-gradient(135deg, #1e1e1e 0%, #0a0a0a 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+/* Brillo superior rojo 3D */
+.tarjeta-cupon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}

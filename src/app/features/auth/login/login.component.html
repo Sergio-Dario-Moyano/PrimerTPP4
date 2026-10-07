@@ -1,0 +1,91 @@
+<section class="auth">
+  <div class="auth__card">
+    <h2 class="auth__title">{{ isLoginMode() ? 'Iniciar Sesión' : 'Crear Cuenta' }}</h2>
+
+    @if (isLoginMode()) {
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth__form">
+        <div class="auth__group">
+          <label class="auth__label">Correo Electrónico</label>
+          <input type="email" formControlName="email" class="auth__input">
+        </div>
+        <div class="auth__group">
+          <label class="auth__label">Contraseña</label>
+          <input type="password" formControlName="clave" class="auth__input">
+        </div>
+        <button type="submit" class="auth__btn" [disabled]="cargando()">
+          {{ cargando() ? 'Procesando...' : 'Ingresar' }}
+        </button>
+      </form>
+    }
+
+    @if (!isLoginMode()) {
+      <form [formGroup]="registroForm" (ngSubmit)="onRegistro()" class="auth__form auth__form--grid">
+        <div class="auth__group auth__group--full">
+          <label class="auth__label">Correo Electrónico</label>
+          <input type="email" formControlName="email" class="auth__input">
+        </div>
+
+        <div class="auth__group">
+          <label class="auth__label">Nombre</label>
+          <input type="text" formControlName="nombre" class="auth__input">
+        </div>
+        <div class="auth__group">
+          <label class="auth__label">Apellido</label>
+          <input type="text" formControlName="apellido" class="auth__input">
+        </div>
+
+        <div class="auth__group">
+          <label class="auth__label">Fecha de Nacimiento</label>
+          <input
+            type="text"
+            formControlName="fechaNacimiento"
+            (input)="formatearFecha($event)"
+            placeholder="DD / MM / AAAA"
+            maxlength="14"
+            class="auth__input">
+          @if (registroForm.controls.fechaNacimiento.hasError('required') && registroForm.controls.fechaNacimiento.touched) {
+            <span class="auth__error">La fecha de nacimiento es requerida.</span>
+          }
+        </div>
+
+        <div class="auth__group">
+          <label class="auth__label">Tipo de Sangre</label>
+          <input type="text" formControlName="tipoSangre" class="auth__input">
+        </div>
+
+        <div class="auth__group">
+          <label class="auth__label">Color de Ojos</label>
+          <input type="text" formControlName="colorOjos" class="auth__input">
+        </div>
+
+        <div class="auth__group">
+          <label class="auth__label">Días Vacaciones/Año</label>
+          <input type="number" formControlName="diasVacaciones" class="auth__input">
+        </div>
+
+        <div class="auth__group auth__group--full">
+          <label class="auth__label">Contraseña</label>
+          <input type="password" formControlName="clave" class="auth__input">
+        </div>
+
+        <div class="auth__group auth__group--full">
+          <label class="auth__label">Confirmar Contraseña</label>
+          <input type="password" formControlName="confirmarClave" class="auth__input">
+          @if (registroForm.controls.confirmarClave.hasError('losControlesNoCoinciden') && registroForm.controls.confirmarClave.touched) {
+            <span class="auth__error">Las contraseñas no coinciden.</span>
+          }
+        </div>
+
+        <button type="submit" class="auth__btn auth__group--full" [disabled]="cargando()">
+          {{ cargando() ? 'Procesando...' : 'Registrarme' }}
+        </button>
+      </form>
+    }
+
+    <div class="auth__toggle-container">
+      <button type="button" class="auth__toggle-btn" (click)="toggleMode()">
+        {{ isLoginMode() ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión' }}
+      </button>
+    </div>
+  </div>
+</section>

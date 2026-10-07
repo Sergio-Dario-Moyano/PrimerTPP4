@@ -1,0 +1,56 @@
+<section class="cartelera-funciones">
+
+  <!-- Botón superior -->
+  <div class="top-action-bar">
+    <p class="sucursal-titulo">
+      ELEGÍ EL DÍA DE LA FUNCIÓN
+    </p>
+  </div>
+
+  <!-- Selector de Días (Pestañas) -->
+  @if (diasDisponibles().length > 0) {
+    <div class="dias-container">
+      @for (dia of diasDisponibles(); track dia.key) {
+        <button
+          class="btn-dia"
+          [class.activo]="fechaSeleccionada() === dia.key"
+          (click)="seleccionarDia(dia.key)">
+          <span class="dia-nombre">{{ dia.label.split(' ')[0] }}</span>
+          <span class="dia-numero">{{ dia.label.split(' ')[1] }}</span>
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Bloque del Cine Principal -->
+  <div class="bloque-cine">
+    <span class="cine-principal-label">TU CINE</span>
+    <h2 class="sucursal-titulo">
+      ELEGÍ EL HORARIO DE TU PREFERENCIA.
+    </h2>
+    <p class="direccion-cine">Dirección: Calle Falsa 123, Springfield</p>
+
+    @if (funcionesFiltradas().length === 0) {
+      <p class="sin-funciones">No hay funciones disponibles para esta fecha.</p>
+    } @else {
+      @for (funcion of funcionesFiltradas(); track funcion.id) {
+        <div class="funcion-grupo">
+          <div class="formato-idioma-tag">
+            {{ funcion.formato }} • {{ funcion.idioma | uppercase }}
+          </div>
+
+          <div class="horarios-grid">
+            <button class="btn-horario" (click)="seleccionarFuncion(funcion)">
+              <span class="icono-butaca-btn">💺</span>
+              <!-- 💡 Ahora el HTML es 100% declarativo y limpio -->
+              <span class="hora-texto">
+                {{ funcion.fechaObj | date:'HH:mm' }}hs
+              </span>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+</section>

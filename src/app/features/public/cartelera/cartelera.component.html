@@ -1,0 +1,380 @@
+<main class="cartelera">
+
+  @if (cargando()) {
+    <div class="cartelera__loading">
+      <div class="cartelera__spinner"></div>
+      <h2 class="cartelera__loading-text">Cargando cartelera...</h2>
+    </div>
+  } @else {
+
+    <!-- HERO SECTION -->
+    @if (peliculaDestacada()) {
+      <section class="hero">
+        <img class="hero__bg" [src]="peliculaDestacada()!.hero_imagen || peliculaDestacada()!.poster_url" [alt]="peliculaDestacada()!.titulo">
+        <div class="hero__overlay"></div>
+
+        <!-- ACÁ LE SACAMOS EL l-container -->
+        <div class="hero__content">
+          <div class="hero__info">
+            @if (peliculaDestacada()!.formatos.length > 0) {
+              <div class="hero__badge">
+                <span class="hero__pulse"></span>
+                Formato {{ peliculaDestacada()!.formatos[0] }}
+              </div>
+            }
+
+            <h1 class="hero__title">{{ peliculaDestacada()!.titulo }}</h1>
+
+            <div class="hero__meta">
+              <span>{{ peliculaDestacada()!.duracion }} min</span>
+              <span class="hero__tag">{{ peliculaDestacada()!.clasificacion }}</span>
+              <span>{{ peliculaDestacada()!.generos.join(', ') }}</span>
+              <span class="hero__tag">Castellano</span>
+            </div>
+
+            @if (peliculaDestacada()!.sinopsis) {
+              <p class="hero__synopsis">{{ peliculaDestacada()!.sinopsis }}</p>
+            }
+
+            <div class="hero__actions">
+              <button class="hero__btn hero__btn--primary" [routerLink]="['/pelicula', peliculaDestacada()!.id]">
+                Reservar Entradas
+              </button>
+              <button class="hero__btn hero__btn--secondary">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                Tráiler
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector Horizontal (Rail) -->
+          <div class="hero__selectors">
+            @for (m of peliculas(); track m.id; let i = $index) {
+              <button
+                class="hero__selector-card"
+                [class.hero__selector-card--active]="indiceDestacado() === i"
+                (click)="establecerPeliculaDestacada(i)">
+                <img [src]="m.poster_url" [alt]="m.titulo" class="hero__selector-img">
+                <span class="hero__selector-title">{{ m.titulo }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- Contenedor general para el resto de la página -->
+    <div class="l-container">
+
+      <!-- TOP 3 PELÍCULAS -->
+      @if (top3Peliculas().length > 0) {
+        <section class="top-movies">
+          <h2 class="section-title">Las 3 Más <span class="highlight">Elegidas</span></h2>
+          <div class="grid-movies">
+            @for (m of top3Peliculas(); track m.id; let i = $index) {
+              <button class="movie-card" [routerLink]="['/pelicula', m.id]">
+                <div class="movie-card__ranking">#{{ i + 1 }}</div>
+                <div class="movie-card__poster-wrapper">
+                  <img class="movie-card__img" [src]="m.poster_url" [alt]="m.titulo">
+                  <div class="movie-card__overlay"></div>
+                </div>
+                <div class="movie-card__content">
+                  <h3 class="movie-card__title">{{ m.titulo }}</h3>
+                  <div class="movie-card__meta">
+                    <span class="movie-card__genre">{{ m.generos[0] }}</span>
+                    <span class="movie-card__rating">🔥 Top Ventas</span>
+                  </div>
+                </div>
+              </button>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- BUSCADOR Y FILTROS -->
+      <section class="filters">
+        <div class="filters__search">
+          <svg class="filters__search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="7" cy="7" r="5" />
+            <path d="M11 11l3 3" stroke-linecap="round" />
+          </svg>
+          <input
+            type="text"
+            [value]="terminoBusqueda()"
+            (input)="buscarPelicula($event)"
+            placeholder="Buscar películas…"
+            class="filters__input"
+          >
+        </div>
+
+        <div class="filters__pills">
+          @for (g of generos(); track g) {
+            <button
+              class="filters__pill"
+              [class.filters__pill--active]="generoSeleccionado() === g"
+              (click)="establecerGenero(g)">
+              {{ g }}
+            </button>
+          }
+        </div>
+      </section>
+
+      <!-- GRILLA DE PELÍCULAS -->
+      <section class="movies">
+        <h2 class="section-title">En Cartelera</h2>
+
+        @if (peliculasFiltradas().length === 0) {
+          <div class="empty-state">Ninguna película coincide con tu búsqueda.</div>
+        } @else {
+          <div class="grid-movies">
+            @for (m of peliculasFiltradas(); track m.id) {
+              <button class="movie-card" [routerLink]="['/pelicula', m.id]">
+                <div class="movie-card__poster-wrapper">
+                  <img class="movie-card__img" [src]="m.poster_url" [alt]="m.titulo">
+                  <div class="movie-card__overlay"></div>
+                  <div class="movie-card__tags">
+                    <span class="movie-card__tag">{{ m.clasificacion }}</span>
+                    @if (m.formatos.length > 0) {
+                      <span class="movie-card__tag">{{ m.formatos[0] }}</span>
+                    }
+                  </div>
+                </div>
+                <div class="movie-card__content">
+                  <h3 class="movie-card__title">{{ m.titulo }}</h3>
+                  <div class="movie-card__meta">
+                    <span class="movie-card__genre">{{ m.generos[0] }}</span>
+                    <span class="movie-card__duration">{{ m.duracion }}m</span>
+                  </div>
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- COMBOS -->
+      <section class="combos">
+        <h2 class="section-title">Combos <span class="highlight">Destacados</span></h2>
+
+        @if (combos().length === 0) {
+          <div class="empty-state">No hay combos disponibles en este momento.</div>
+        } @else {
+          <div class="grid-combos">
+            @for (c of combos(); track c.nombre) {
+              <article class="combo-card" [class.combo-card--popular]="c.esPopular">
+                @if (c.esPopular) {
+                  <div class="combo-card__badge">POPULAR</div>
+                }
+                <div class="combo-card__emoji">{{ c.emoji }}</div>
+                <h3 class="combo-card__title">{{ c.nombre }}</h3>
+                <p class="combo-card__desc">{{ c.descripcion }}</p>
+                <div class="combo-card__footer">
+                  <span class="combo-card__price">{{ c.precio }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    </div>
+  }
+</main>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- Se agrega la clase utilitaria l-container para mantener los 1200px de tope máximo
+<main class="cartelera l-container">
+
+  @if (cargando()) {
+    <div class="cartelera__loading">
+      <div class="cartelera__spinner"></div>
+      <h2 class="cartelera__loading-text">Cargando cartelera...</h2>
+    </div>
+  } @else {
+
+    HERO SECTION
+    @if (peliculaDestacada()) {
+      <section class="hero">
+        <img class="hero__bg" [src]="peliculaDestacada()!.hero_imagen || peliculaDestacada()!.poster_url" [alt]="peliculaDestacada()!.titulo">
+        <div class="hero__overlay"></div>
+
+        <div class="hero__content">
+          <div class="hero__info">
+            @if (peliculaDestacada()!.formatos.length > 0) {
+              <div class="hero__badge">
+                <span class="hero__pulse"></span>
+                Formato {{ peliculaDestacada()!.formatos[0] }}
+              </div>
+            }
+
+            <h1 class="hero__title">{{ peliculaDestacada()!.titulo }}</h1>
+
+            <div class="hero__meta">
+              <span>{{ peliculaDestacada()!.duracion }} min</span>
+              <span class="hero__meta-divider">•</span>
+              <span class="hero__tag">{{ peliculaDestacada()!.clasificacion }}</span>
+              <span class="hero__meta-divider">•</span>
+              <span>{{ peliculaDestacada()!.generos.join(', ') }}</span>
+            </div>
+
+            @if (peliculaDestacada()!.sinopsis) {
+              <p class="hero__synopsis">{{ peliculaDestacada()!.sinopsis }}</p>
+            }
+
+            <div class="hero__actions">
+              <button class="hero__btn hero__btn--primary" [routerLink]="['/pelicula', peliculaDestacada()!.id]">
+                Reservar Entradas
+              </button>
+            </div>
+          </div>
+
+          <div class="hero__selectors">
+            @for (m of peliculas(); track m.id; let i = $index) {
+              <button
+                class="hero__selector-card"
+                [class.hero__selector-card--active]="indiceDestacado() === i"
+                (click)="establecerPeliculaDestacada(i)">
+                <img [src]="m.poster_url" [alt]="m.titulo" class="hero__selector-img">
+              </button>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    TOP 3 PELÍCULAS
+    @if (top3Peliculas().length > 0) {
+      <section class="top-movies">
+        <h2 class="section-title">Las 3 Más <span class="highlight">Elegidas</span></h2>
+        <div class="grid-movies">
+          @for (m of top3Peliculas(); track m.id; let i = $index) {
+            <button class="movie-card" [routerLink]="['/pelicula', m.id]">
+              <div class="movie-card__ranking">#{{ i + 1 }}</div>
+              <div class="movie-card__poster-wrapper">
+                <img class="movie-card__img" [src]="m.poster_url" [alt]="m.titulo">
+                <div class="movie-card__overlay"></div>
+              </div>
+              <div class="movie-card__content">
+                <h3 class="movie-card__title">{{ m.titulo }}</h3>
+                <div class="movie-card__meta">
+                  <span class="movie-card__genre">{{ m.generos[0] }}</span>
+                  <span class="movie-card__rating">🔥 Top Ventas</span>
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      </section>
+    }
+
+    BUSCADOR Y FILTROS
+    <section class="filters">
+      <div class="filters__search">
+        <svg class="filters__search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="7" cy="7" r="5" />
+          <path d="M11 11l3 3" stroke-linecap="round" />
+        </svg>
+        <input
+          type="text"
+          [value]="terminoBusqueda()"
+          (input)="buscarPelicula($event)"
+          placeholder="Buscar películas…"
+          class="filters__input"
+        >
+      </div>
+
+      <div class="filters__pills">
+        @for (g of generos(); track g) {
+          <button
+            class="filters__pill"
+            [class.filters__pill--active]="generoSeleccionado() === g"
+            (click)="establecerGenero(g)">
+            {{ g }}
+          </button>
+        }
+      </div>
+    </section>
+
+    GRILLA DE PELÍCULAS
+    <section class="movies">
+      <h2 class="section-title">En Cartelera</h2>
+
+      @if (peliculasFiltradas().length === 0) {
+        <div class="empty-state">Ninguna película coincide con tu búsqueda.</div>
+      } @else {
+        <div class="grid-movies">
+          @for (m of peliculasFiltradas(); track m.id) {
+            <button class="movie-card" [routerLink]="['/pelicula', m.id]">
+              <div class="movie-card__poster-wrapper">
+                <img class="movie-card__img" [src]="m.poster_url" [alt]="m.titulo">
+                <div class="movie-card__overlay"></div>
+                <div class="movie-card__tags">
+                  <span class="movie-card__tag">{{ m.clasificacion }}</span>
+                  @if (m.formatos.length > 0) {
+                    <span class="movie-card__tag">{{ m.formatos[0] }}</span>
+                  }
+                </div>
+              </div>
+              <div class="movie-card__content">
+                <h3 class="movie-card__title">{{ m.titulo }}</h3>
+                <div class="movie-card__meta">
+                  <span class="movie-card__genre">{{ m.generos[0] }}</span>
+                  <span class="movie-card__duration">{{ m.duracion }}m</span>
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    COMBOS
+    <section class="combos">
+      <h2 class="section-title">Combos <span class="highlight">Destacados</span></h2>
+
+      @if (combos().length === 0) {
+        <div class="empty-state">No hay combos disponibles en este momento.</div>
+      } @else {
+        <div class="grid-combos">
+          @for (c of combos(); track c.nombre) {
+            <article class="combo-card" [class.combo-card--popular]="c.esPopular">
+              @if (c.esPopular) {
+                <div class="combo-card__badge">POPULAR</div>
+              }
+              <div class="combo-card__emoji">{{ c.emoji }}</div>
+              <h3 class="combo-card__title">{{ c.nombre }}</h3>
+              <p class="combo-card__desc">{{ c.descripcion }}</p>
+              <div class="combo-card__footer">
+                <span class="combo-card__price">{{ c.precio }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+  }
+</main> -->

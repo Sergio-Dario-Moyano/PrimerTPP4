@@ -1,0 +1,224 @@
+/* src/app/features/public/detalle-pelicula/components/funciones-pelicula/funciones-pelicula.css */
+:host {
+  display: block;
+  background-color: #0f0f11;
+  color: #ffffff;
+  padding: 2.5rem;
+  border-radius: 16px;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin-top: 2rem;
+}
+
+/* Botón superior */
+.top-action-bar {
+  margin-bottom: 1.5rem;
+}
+
+.btn-cartelera-cine {
+  background-color: #1a1a1e;
+  color: #ffffff;
+  border: 1px solid #2d2d33;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-cartelera-cine span {
+  font-size: 1rem;
+}
+
+/* Selector de Días */
+.dias-container {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.btn-dia {
+  background-color: #1a1a1e;
+  border: 1px solid #2d2d33;
+  color: #a1a1aa;
+  /* padding: 0.85rem 1.5rem; */
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 120px;
+  transition: all 0.2s ease;
+}
+
+.btn-dia:hover {
+  border-color: #52525b;
+  color: #fff;
+}
+
+.btn-dia.activo {
+  background-color: #ffffff;
+  color: #0f0f11;
+  border-color: #ffffff;
+  font-weight: 800;
+}
+
+.dia-nombre {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dia-numero {
+  font-size: 0.95rem;
+  margin-top: 0.2rem;
+  font-weight: 700;
+}
+
+/* Filtros (Formatos e Idioma) */
+.filtros-container {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.dropdown-filtro {
+  background-color: #1a1a1e;
+  border: 1px solid #2d2d33;
+  color: #d4d4d8;
+  padding: 0.7rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.dropdown-filtro span {
+  font-size: 0.65rem;
+  color: #71717a;
+}
+
+/* Leyenda de Disponibilidad */
+.disponibilidad-legenda {
+  margin-bottom: 2.5rem;
+}
+
+.legenda-titulo {
+  font-size: 0.7rem;
+  color: #71717a;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.legenda-items {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.85rem;
+  color: #d4d4d8;
+}
+
+.item-legenda {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icono-asiento {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.icono-asiento.alta { background-color: #10b981; }
+.icono-asiento.media { background-color: #f59e0b; }
+.icono-asiento.baja { background-color: #f43f5e; }
+.icono-asiento.completa { background-color: #71717a; }
+
+/* Bloque del Cine */
+.cine-principal-label {
+  font-size: 0.7rem;
+  color: #71717a;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.sucursal-titulo {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.01em;
+}
+
+.texto-rojo {
+  color: #ef4444; /* Rojo exacto de la referencia */
+}
+
+.direccion-cine {
+  font-size: 0.9rem;
+  color: #a1a1aa;
+  margin-bottom: 1.5rem;
+}
+
+/* Grupo de Horarios */
+.funcion-grupo {
+  margin-top: 1rem;
+}
+
+.formato-idioma-tag {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #d4d4d8;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.03em;
+}
+
+.horarios-grid {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-horario {
+  background-color: #1a1a1e;
+  border: 1px solid #2d2d33;
+  color: white;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: all 0.2s ease;
+}
+
+.btn-horario:hover {
+  background-color: #27272a;
+  border-color: #52525b;
+  transform: translateY(-1px);
+}
+
+.icono-butaca-btn {
+  font-size: 0.85rem;
+}
+
+.hora-texto {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.sin-funciones {
+  color: #71717a;
+  font-style: italic;
+  font-size: 0.9rem;
+}

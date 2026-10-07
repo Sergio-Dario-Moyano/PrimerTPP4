@@ -1,0 +1,163 @@
+/* =========================================
+   BLOQUE: AUTH (Layout Base)
+   ========================================= */
+.auth {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.auth__card {
+  background-color: var(--color-primary);
+  padding: 1.5rem;
+  border-radius: 8px;
+  width: 100%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  max-width: 600px; /* Limitado para que no se estire demasiado en desktop */
+}
+
+.auth__title {
+  color: var(--color-text-light);
+  text-align: center;
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+}
+
+/* =========================================
+   ELEMENTO: FORMULARIO
+   ========================================= */
+.auth__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.auth__form--grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.2rem;
+}
+
+/* Modificador para ocupar el 100% de la fila */
+.auth__group--full {
+  grid-column: 1 / -1;
+}
+
+.auth__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auth__label {
+  color: #b3b3b3;
+  font-size: 0.9rem;
+}
+
+.auth__input {
+  background-color: #2b2b2b;
+  border: 1px solid #404040;
+  color: var(--color-text-light);
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth__input:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+}
+
+/* Clases de validación nativas de Angular */
+.auth__input.ng-touched.ng-invalid {
+  border-color: #cf6679;
+  box-shadow: 0 0 5px rgba(207, 102, 121, 0.3);
+}
+
+.auth__input.ng-touched.ng-valid {
+  border-color: #4caf50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+.auth__input:disabled {
+  border-color: #404040;
+  opacity: 0.6;
+}
+
+.auth__error {
+  color: #cf6679;
+  font-size: 0.8rem;
+  margin-top: 0.2rem;
+}
+
+/* =========================================
+   ELEMENTO: BOTÓN
+   ========================================= */
+.auth__btn {
+  background-color: var(--color-secondary);
+  color: var(--color-text-light);
+  border: none;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.auth__btn:hover:not(:disabled) {
+  background-color: #b80710;
+}
+
+.auth__btn:disabled {
+  background-color: #555555;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* =========================================
+   ELEMENTO: ALTERNAR MODO
+   ========================================= */
+.auth__toggle-container {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.auth__toggle-btn {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.auth__toggle-btn:hover {
+  text-decoration: underline;
+  color: #b80710;
+}
+
+/* =========================================
+   ESCRITORIO (Mayores a 768px)
+   ========================================= */
+@media (min-width: 768px) {
+  .auth__card {
+    padding: 2.5rem;
+    border-radius: 12px;
+  }
+
+  .auth__title {
+    font-size: 1.8rem;
+  }
+
+  /* Cambia el formulario de registro a dos columnas en desktop */
+  .auth__form--grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

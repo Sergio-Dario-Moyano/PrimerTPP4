@@ -1,0 +1,38 @@
+<section class="cupon-bienvenida">
+  <h2 class="cupon-bienvenida__subtitle">Tus Beneficios</h2>
+
+  @if (cargandoCupones()) {
+    <div class="cupon-bienvenida__status">
+      <div class="pulse-dot pulse-dot-loading"></div>
+      <p>Buscando tus cupones disponibles...</p>
+    </div>
+  } @else if (error()) {
+    <div class="cupon-bienvenida__status cupon-bienvenida__status--error">
+      <p>{{ error() }}</p>
+    </div>
+  } @else if (cuponDisponible()) {
+    <article class="tarjeta-cupon">
+      <div class="tarjeta-cupon__header">
+        <h3 class="tarjeta-cupon__titulo">¡Tu Regalo de Bienvenida!</h3>
+      </div>
+
+      <div class="tarjeta-cupon__body">
+        <span class="tarjeta-cupon__numero">{{ cuponDisponible()?.porcentaje_descuento }}</span>
+        <span class="tarjeta-cupon__unidad">% OFF</span>
+      </div>
+
+      <p class="tarjeta-cupon__info">Presentá este código en tu próxima compra de entradas o <strong>candy bar</strong>.</p>
+
+      <div class="tarjeta-cupon__codigo-wrapper">
+        <span class="tarjeta-cupon__codigo">{{ cuponDisponible()?.codigo }}</span>
+      </div>
+    </article>
+  } @else {
+    <div class="cupon-bienvenida__empty">
+      <p>
+        Actualmente no tienes cupones disponibles. <br>
+        ¡Mantenete atento a nuestras promociones para obtener descuentos exclusivos!
+      </p>
+    </div>
+  }
+</section>

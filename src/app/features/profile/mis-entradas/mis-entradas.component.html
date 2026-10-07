@@ -1,0 +1,52 @@
+<section class="mis-entradas">
+  <h3 class="mis-entradas__title">Mis Entradas</h3>
+
+  @if (cargando()) {
+    <div class="mis-entradas__status">
+      <div class="pulse-dot pulse-dot-loading"></div>
+      <p>Buscando tus entradas...</p>
+    </div>
+  } @else if (error()) {
+    <div class="mis-entradas__status mis-entradas__status--error">
+      <p>{{ error() }}</p>
+    </div>
+  } @else {
+
+    @if (historialCompras().length === 0) {
+      <div class="mis-entradas__empty">
+        <p>Aún no has comprado entradas.</p>
+        <a routerLink="/" class="mis-entradas__btn-primary">Ver Cartelera</a>
+      </div>
+    } @else {
+      <div class="mis-entradas__grid">
+        @for (compra of historialCompras(); track compra.id) {
+          <article class="purchase-card">
+
+            <div class="purchase-card__details">
+              <p class="purchase-card__date">
+                📅 {{ compra.fecha_compra | date:'dd/MM/yyyy HH:mm' }}
+              </p>
+              <p class="purchase-card__code">
+                <span class="purchase-card__highlight">Ticket:</span> {{ compra.codigo_ticket }}
+              </p>
+              <p class="purchase-card__total">Total: <strong>${{ compra.total_pagado }}</strong></p>
+              <p class="purchase-card__status">
+                Estado:
+                <span class="purchase-card__badge"
+                      [class.purchase-card__badge--cancelada]="compra.estado === 'cancelada'">
+                  {{ compra.estado }}
+                </span>
+              </p>
+            </div>
+
+            <div class="purchase-card__actions">
+              <a [routerLink]="['/ticket', compra.id]" class="mis-entradas__btn-primary">Ver Ticket y QR</a>
+            </div>
+
+          </article>
+        }
+      </div>
+    }
+
+  }
+</section>

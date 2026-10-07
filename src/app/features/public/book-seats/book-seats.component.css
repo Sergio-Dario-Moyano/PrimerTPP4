@@ -1,0 +1,370 @@
+:host {
+  display: block;
+  /* Cambio 100vw por 100% para evitar el scroll horizontal forzado del SO */
+  width: 100%;
+  overflow-x: hidden;
+
+  --card-bg: #1c1c1c;
+  --card-hover-bg: #2a2a2a;
+  --text-main: #ffffff;
+  --text-muted: #a1a1aa;
+  --border-color: #333333;
+  --primary-btn: #facc15;
+  --primary-btn-hover: #eab308;
+  --primary-btn-text: #141414;
+}
+
+/* =========================================================
+   LAYOUT PRINCIPAL
+   ========================================================= */
+.book-seats {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  box-sizing: border-box;
+  overflow-x: hidden; /* CORTA cualquier desfase en celular a nivel página */
+}
+
+/* =========================================================
+   ESTADO DE CARGA
+   ========================================================= */
+.book-seats__loading {
+  text-align: center;
+  padding: 5rem 0;
+  color: var(--text-muted);
+}
+
+.pulse-dot {
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.pulse-dot-loading {
+  background-color: var(--primary-btn);
+  width: 15px;
+  height: 15px;
+  margin: 0 auto 1rem;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(250, 204, 21, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+.book-seats__header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.book-seats__title {
+  font-size: 1.25rem;
+  margin-top: 0;
+  margin-right: 0;
+  margin-bottom: 0.5rem;
+  margin-left: 0;
+  color: var(--text-main);
+  text-transform: uppercase;
+}
+
+.book-seats__subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.book-seats__highlight {
+  color: var(--primary-btn);
+  font-weight: bold;
+}
+
+.book-seats__dot {
+  opacity: 0.5;
+}
+
+/* =========================================================
+   GRILLA Y SECCIONES
+   ========================================================= */
+.book-seats__grid {
+  display: grid;
+  /* CRUCIAL: minmax(0, 1fr) evita que CSS Grid rompa el ancho en celulares */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  width: 100%;
+}
+
+.seat-map {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden; /* Evita que el mapa deforme a la grilla madre */
+}
+
+.seat-map__scroll-container {
+  width: 100%;
+  overflow-x: auto; /* SCROLL NATIVO SOLO OCURRE AQUÍ DENTRO */
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 1rem;
+  scrollbar-width: none;
+}
+
+.seat-map__scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 💡 NUEVO: Envuelve Pantalla + Asientos para que compartan ancho */
+.seat-map__pan-area {
+  min-width: 650px; /* Ancho fijo mínimo para asegurar butacas de buen tamaño en celular */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto;
+  padding: 0 10px;
+}
+
+/* =========================================================
+   PANTALLA
+   ========================================================= */
+.seat-map__screen {
+  width: 90%; /* Ahora la pantalla ocupa el 90% del ancho TOTAL de los asientos */
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.seat-map__screen-curve {
+  height: 25px; /* Curva un poco más alta para que se note el tamaño */
+  border-top: 4px solid var(--border-color);
+  border-radius: 50% 50% 0 0;
+  margin-bottom: 0.5rem;
+}
+
+.seat-map__screen-text {
+  font-size: 0.8rem;
+  letter-spacing: 4px; /* Letras un poco más separadas */
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* =========================================================
+   FILAS DE BUTACAS
+   ========================================================= */
+.seat-map__rows {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.seat-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.seat-row__label {
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: 15px;
+  width: 15px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.seat-row__cells {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 0;
+  min-width: 0;
+  gap: 2px;
+  padding: 0 4px;
+}
+
+/* =========================================================
+   BUTACAS Y ESPACIOS
+   ========================================================= */
+.seat-cell {
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 0;
+  min-width: 0;
+  max-width: 26px;
+  aspect-ratio: 22 / 26;
+  height: auto;
+}
+
+.seat-cell--aisle,
+.seat-cell--empty {
+  max-width: 12px;
+  background: transparent;
+  border: none;
+}
+
+.seat-cell--btn,
+.seat-cell--standard,
+.seat-cell--legend {
+  border-radius: 4px 4px 2px 2px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-hover-bg);
+  color: var(--text-main);
+  padding: 0;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.seat-cell--btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.3);
+  border-color: var(--primary-btn);
+}
+
+.seat-cell__icon {
+  font-size: clamp(8px, 2vw, 12px);
+  line-height: 1;
+}
+
+/* Tipos y Estados de Butacas */
+.seat-cell--accessible {
+  background-color: #0369a1;
+  border-color: #0ea5e9;
+}
+.seat-cell--vip {
+  background-color: #7e22ce;
+  border-color: #a855f7;
+}
+
+.seat-cell--occupied {
+  background-color: #141414;
+  border-color: #222222;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.seat-cell--occupied::after {
+  content: '✕';
+  font-size: clamp(8px, 2vw, 12px);
+  font-weight: bold;
+  color: #444444;
+}
+.seat-cell--occupied .seat-cell__icon { display: none; }
+
+.seat-cell--selected {
+  background-color: var(--primary-btn);
+  border-color: #000;
+  color: #000;
+  transform: scale(1.1);
+  z-index: 2;
+}
+.seat-cell--selected::after {
+  content: '✓';
+  font-size: clamp(10px, 2.5vw, 14px);
+  font-weight: 900;
+}
+.seat-cell--selected .seat-cell__icon { display: none; }
+
+/* =========================================================
+   LEYENDA
+   ========================================================= */
+.seat-legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.seat-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.seat-cell--legend {
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: 16px;
+  width: 16px;
+  height: 20px;
+  cursor: default;
+  transform: none !important;
+}
+
+/* =========================================================
+   RESUMEN DE COMPRA
+   ========================================================= */
+.book-seats__summary {
+  width: 100%;
+}
+
+/* =========================================================
+   MEDIA QUERIES
+   ========================================================= */
+@media (min-width: 1024px) {
+  .book-seats {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .book-seats__title {
+    font-size: 1.8rem;
+  }
+
+  .book-seats__grid {
+    grid-template-columns: 1fr 340px;
+    gap: 3rem;
+  }
+
+  /* El scroll interno se quita en PC porque todo entra bien */
+  .seat-map__scroll-container {
+    overflow-x: visible;
+  }
+
+  .seat-map__pan-area {
+    min-width: 100%; /* Toma todo el ancho disponible */
+  }
+
+  .seat-row {
+    margin-bottom: 6px;
+  }
+
+  .seat-row__label {
+    flex-basis: 25px;
+    width: 25px;
+    font-size: 0.9rem;
+  }
+
+  .seat-row__cells {
+    gap: 4px;
+  }
+
+  .seat-cell {
+    max-width: 32px;
+  }
+
+  .seat-cell--aisle,
+  .seat-cell--empty {
+    max-width: 20px;
+  }
+
+  .book-seats__summary {
+    position: sticky;
+    top: 2rem;
+  }
+}

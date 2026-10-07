@@ -1,0 +1,56 @@
+<nav class="navbar">
+  <div class="navbar__container">
+
+    <!-- Logo -->
+    <a class="navbar__brand" routerLink="/" (click)="cerrarMenu()">
+      <div class="navbar__logo-badge">CL</div>
+      <span class="navbar__logo-text">Cine<span class="navbar__highlight">Lanús</span></span>
+    </a>
+
+    <!-- Botón Hamburguesa -->
+    <button class="navbar__toggle" (click)="toggleMenu()" aria-label="Abrir menú">
+      @if (!menuAbierto()) {
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      } @else {
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      }
+    </button>
+
+    <!-- Contenedor del menú -->
+    <div class="navbar__menu" [class.navbar__menu--open]="menuAbierto()">
+
+      <div class="navbar__links">
+        <a routerLink="/" routerLinkActive="navbar__link--active" [routerLinkActiveOptions]="{exact: true}" class="navbar__link" (click)="cerrarMenu()">
+          Cartelera
+        </a>
+
+        @if (usuarioActual()) {
+          <a routerLink="/perfil" routerLinkActive="navbar__link--active" class="navbar__link" (click)="cerrarMenu()">
+            Mi Perfil
+          </a>
+        }
+
+        <!-- Botón visible solo si el usuario es administrador -->
+        @if (esAdmin()) {
+          <a routerLink="/admin" routerLinkActive="navbar__link--active" class="navbar__link navbar__link--admin" (click)="cerrarMenu()">
+            ⚙️ Panel Admin
+          </a>
+        }
+      </div>
+
+      <div class="navbar__actions">
+        @if (usuarioActual()) {
+          <span class="navbar__user-greeting">Hola, {{ usuarioActual()?.user_metadata?.['nombre'] }}</span>
+          <button (click)="cerrarSesion()" class="navbar__btn" title="Cerrar sesión">Salir</button>
+        } @else {
+          <a routerLink="/login" class="navbar__btn" (click)="cerrarMenu()">Iniciar Sesión</a>
+        }
+      </div>
+
+    </div>
+  </div>
+</nav>

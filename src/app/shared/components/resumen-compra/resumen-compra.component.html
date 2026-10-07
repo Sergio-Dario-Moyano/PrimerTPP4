@@ -1,0 +1,86 @@
+<div class="resumen">
+  <h2 class="resumen__titulo">Resumen de Compra</h2>
+
+  <div class="resumen__pelicula">
+    <img [src]="pelicula().posterUrl" [alt]="pelicula().titulo" class="resumen__poster">
+    <div class="resumen__peli-info">
+      <h3 class="resumen__peli-titulo">{{ pelicula().titulo }}</h3>
+      <span class="resumen__badge">{{ pelicula().formato }}</span>
+    </div>
+  </div>
+
+  <div class="resumen__funcion">
+    <p><span class="resumen__icono">📍</span> {{ funcion().cine }}</p>
+    <p><span class="resumen__icono">📅</span> Fecha: {{ funcion().fechaFormateada }}</p>
+    <p><span class="resumen__icono">🕒</span> Hora: {{ funcion().horaFormateada }}</p>
+    <p><span class="resumen__icono">🎬</span> Sala: {{ funcion().sala }}</p>
+  </div>
+
+  <div class="resumen__separador"></div>
+
+  <div class="resumen__desglose">
+    <h4 class="resumen__subtitulo">Tus Asientos</h4>
+
+    @if (butacas().length === 0) {
+      <p class="resumen__vacio">Aún no has seleccionado butacas.</p>
+    } @else {
+      <div class="resumen__butacas">
+        @for (butaca of butacas(); track butaca) {
+          <span class="resumen__butaca-badge">{{ butaca }}</span>
+        }
+      </div>
+    }
+
+    @for (entrada of entradas(); track entrada.tipo) {
+      <div class="resumen__fila">
+        <span>{{ entrada.cantidad }}x {{ entrada.tipo }}</span>
+        <span>${{ entrada.precioTotal | number:'1.2-2' }}</span>
+      </div>
+    }
+
+    @if (cargoServicioEntradas() > 0) {
+      <div class="resumen__fila resumen__fila--cargo">
+        <span>Cargo de servicio</span>
+        <span>${{ cargoServicioEntradas() | number:'1.2-2' }}</span>
+      </div>
+    }
+  </div>
+
+  @if (candy().length > 0) {
+    <div class="resumen__separador resumen__separador--sutil"></div>
+
+    <div class="resumen__desglose">
+      <h4 class="resumen__subtitulo">Confitería</h4>
+
+      @for (item of candy(); track item.nombre) {
+        <div class="resumen__fila">
+          <span>{{ item.cantidad }}x {{ item.nombre }}</span>
+          <span>${{ item.precioTotal | number:'1.0-0' }}</span>
+        </div>
+      }
+
+      @if (cargoServicioCandy() > 0) {
+        <div class="resumen__fila resumen__fila--cargo">
+          <span>Cargo de servicio</span>
+          <span>${{ cargoServicioCandy() | number:'1.0-0' }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="resumen__separador"></div>
+
+  <div class="resumen__total">
+    <div class="resumen__fila-total">
+      <span class="resumen__label-tot">Total a pagar</span>
+      <span class="resumen__precio-final">${{ granTotal() | number:'1.2-2' }}</span>
+    </div>
+
+    <button
+      class="resumen__btn"
+      [disabled]="deshabilitarContinuar()"
+      (click)="onContinuar.emit()">
+      {{ textoBoton() }}
+    </button>
+  </div>
+</div>

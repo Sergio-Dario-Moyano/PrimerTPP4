@@ -1,0 +1,142 @@
+<main class="ticket-view l-container">
+  @if (cargando()) {
+    <div class="ticket__loading">
+      <div class="pulse-dot pulse-dot-loading"></div>
+      <h2>Generando tu ticket...</h2>
+    </div>
+  } @else if (error()) {
+    <div class="ticket__error">
+      <p>{{ error() }}</p>
+      <button class="ticket__btn ticket__btn--primary" routerLink="/">Volver al inicio</button>
+    </div>
+  } @else {
+    <!-- Contenedor principal para exportar a PDF -->
+    <article id="ticket-exportar" class="ticket-card">
+
+      <header class="ticket-card__header">
+        <p class="ticket-card__brand">CineLanús</p>
+        <h2 class="ticket-card__title">¡Compra Exitosa!</h2>
+        <p class="ticket-card__client">Titular: <strong>{{ clienteNombre() }}</strong></p>
+        <p class="ticket-card__code">
+          <span class="ticket-card__code-label">Ticket N°:</span> {{ codigo_ticket() }}
+        </p>
+      </header>
+
+      <div class="ticket-card__divider"></div>
+
+      <div class="ticket-card__body">
+
+        <!-- SECCIÓN DE LA PELÍCULA -->
+        @if (funcion()) {
+          <div class="ticket-card__movie-info">
+            <h3 class="ticket-card__movie-title">{{ funcion()!.pelicula.titulo }}</h3>
+
+            <div class="ticket-card__datetime">
+              <div class="ticket-card__data-box">
+                <span>FECHA</span>
+                <strong>{{ funcion()!.fecha | date:'dd/MM/yyyy' }}</strong>
+              </div>
+              <div class="ticket-card__data-box">
+                <span>HORA</span>
+                <strong>{{ funcion()!.hora | date:'HH:mm' }}</strong>
+              </div>
+              <div class="ticket-card__data-box">
+                <span>SALA</span>
+                <strong>{{ funcion()!.sala.nombre }}</strong>
+              </div>
+            </div>
+
+            <!-- ADVERTENCIA DE EDAD -->
+            @if (funcion()!.pelicula.restriccion_edad > 0) {
+              <div class="ticket-card__warning">
+                <strong>ATENCIÓN (+{{ funcion()!.pelicula.restriccion_edad }}):</strong> Menores de edad deben ingresar acompañados por un adulto.
+              </div>
+            }
+          </div>
+        }
+
+        <!-- SECCIÓN DE BUTACAS -->
+        <div class="ticket-card__section">
+          <h3 class="ticket-card__subtitle">Tus Butacas ({{ entradas().length }})</h3>
+          <ul class="ticket-card__list">
+            @for (entrada of entradas(); track entrada.id) {
+              <li class="ticket-card__list-item">
+                <span>Fila <strong>{{ entrada.butacas?.fila || '-' }}</strong></span>
+                <span>Asiento <strong>{{ entrada.butacas?.columna || '-' }}</strong></span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <!-- SECCIÓN CANDY BAR -->
+        @if (combos().length > 0) {
+          <div class="ticket-card__section">
+            <h3 class="ticket-card__subtitle">Candy Bar</h3>
+            <ul class="ticket-card__combo-list">
+              @for (combo of combos(); track combo.combo_id) {
+                <li><strong>{{ combo.cantidad }}x</strong> {{ combo.nombre }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="ticket-card__qr-section">
+          <p class="ticket-card__qr-instructions">Presenta este código en el ingreso</p>
+          <div class="ticket-card__qr-wrapper">
+            <qrcode
+              [qrdata]="qrData()"
+              [allowEmptyString]="true"
+              [width]="160"
+              [colorDark]="'#000000'"
+              [colorLight]="'#ffffff'"
+              [errorCorrectionLevel]="'M'">
+            </qrcode>
+          </div>
+          <div class="ticket-card__manual-code">
+            <span>PIN de ingreso manual</span>
+            <strong class="ticket-card__highlight">{{ codigoManual() }}</strong>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="ticket-card__divider"></div>
+
+      <footer class="ticket-card__footer">
+        <p class="ticket-card__total">Total Pagado: <strong>${{ compra()?.total_pagado }}</strong></p>
+        <p class="ticket-card__email">Comprobante enviado a:<br>{{ compra()?.email_contacto }}</p>
+
+        <!-- Acciones: Se ignoran al exportar el PDF -->
+        <div class="ticket-card__actions" data-html2canvas-ignore>
+          <button class="ticket__btn ticket__btn--secondary" (click)="descargarTicket()">Descargar Ticket</button>
+          <button class="ticket__btn ticket__btn--primary" routerLink="/">Volver a la Cartelera</button>
+
+          @if (compra()?.estado !== 'cancelada') {
+            <button class="ticket__btn ticket__btn--danger" (click)="intentarCancelar(compra())">
+              Cancelar Entrada
+            </button>
+          } @else {
+            <div class="ticket-card__badge-cancel">
+              COMPRA CANCELADA
+            </div>
+          }
+        </div>
+      </footer>
+    </article>
+  }
+
+  <!-- MODAL PROPIO DE CONFIRMACIÓN DE CANCELACIÓN -->
+@if (modalCancelacionAbierto()) {
+  <div class="cancel-modal-overlay" data-html2canvas-ignore>
+    <div class="cancel-modal-container">
+      <h3>¿Estás seguro de cancelar?</h3>
+      <p>Recibirás <strong>${{ datosCompraPendiente()?.total_pagado }} puntos</strong> de reembolso en tu perfil.</p>
+
+      <div class="cancel-modal-actions">
+        <button class="ticket__btn ticket__btn--secondary" (click)="cancelarProceso()">No, mantener</button>
+        <button class="ticket__btn ticket__btn--danger" (click)="ejecutarCancelacion()">Sí, cancelar</button>
+      </div>
+    </div>
+  </div>
+}
+</main>
