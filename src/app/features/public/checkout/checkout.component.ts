@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { Component, inject, computed, signal, OnInit, input } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,6 +36,7 @@ export class CheckoutComponent implements OnInit {
 
   procesando = signal(false);
   validandoCupon = signal(false);
+  miInput = input();
 
   descuentoPorcentaje = signal(0);
   cuponId = signal<string | null>(null);

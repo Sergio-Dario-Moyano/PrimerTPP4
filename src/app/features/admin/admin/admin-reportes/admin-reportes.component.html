@@ -1,0 +1,39 @@
+<div class="reportes-container">
+  <h2>Reportes y Estadísticas - CineLanús</h2>
+
+  @if (cargando()) {
+    <p class="loading">Cargando métricas...</p>
+  } @else {
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <h3>Total Facturado</h3>
+        <p class="metric-value">$ {{ totalFacturado() | number:'1.0-0' }}</p>
+      </div>
+      <div class="metric-card">
+        <h3>Entradas Vendidas</h3>
+        <p class="metric-value">{{ totalEntradasVendidas() }}</p>
+      </div>
+    </div>
+
+    <div class="export-actions">
+      <button class="btn-export pdf" (click)="exportarPDF()">Exportar a PDF</button>
+      <button class="btn-export excel" (click)="exportarExcel()">Exportar a Excel (CSV)</button>
+    </div>
+
+    <div class="ranking-section">
+      <h3>Películas más vistas</h3>
+      <ul>
+        @for (p of peliculasTop(); track p.titulo) {
+          <li><span>{{ p.titulo }}</span> <strong>{{ p.entradas_vendidas }} entradas</strong></li>
+        }
+      </ul>
+
+      <h3>Productos del Candy Bar más vendidos</h3>
+      <ul>
+        @for (c of candyTop(); track c.nombre) {
+          <li><span>{{ c.nombre }}</span> <strong>{{ c.cantidad }} unidades</strong></li>
+        }
+      </ul>
+    </div>
+  }
+</div>

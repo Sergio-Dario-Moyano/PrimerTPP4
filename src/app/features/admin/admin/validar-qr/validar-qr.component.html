@@ -1,0 +1,35 @@
+<div class="admin-container">
+  <h2>Validación de Entradas y Candy Bar</h2>
+  <p class="sub">Ingrese el código PIN manual de la entrada o del producto de confitería para registrar su validación o entrega.</p>
+
+  <form [formGroup]="validarForm" (ngSubmit)="procesarValidacion()" class="admin-form">
+    <div class="form-group">
+      <label>Código PIN / ID:</label>
+      <input type="text" formControlName="codigoManual" placeholder="Ej. ABC123XYZ">
+    </div>
+
+    <button type="submit" class="admin-btn" [disabled]="cargando()">
+      {{ cargando() ? 'Validando...' : 'Validar Código' }}
+    </button>
+  </form>
+
+  @if (mensajeError()) {
+    <div class="alert error">{{ mensajeError() }}</div>
+  }
+
+  @if (resultadoValidacion()) {
+    <div class="resultado-card success">
+      <h3>✨ ¡Validación Exitosa!</h3>
+      <p><strong>Tipo:</strong> {{ resultadoValidacion().tipo }}</p>
+      @if (resultadoValidacion().tipo === 'CINE') {
+        <p><strong>Película:</strong> {{ resultadoValidacion().titulo }}</p>
+        <p><strong>Sala:</strong> {{ resultadoValidacion().sala }}</p>
+        <p><strong>Cliente:</strong> {{ resultadoValidacion().cliente }}</p>
+      } @else {
+        <p><strong>Producto:</strong> {{ resultadoValidacion().producto }}</p>
+        <p><strong>Cantidad:</strong> {{ resultadoValidacion().cantidad }}</p>
+      }
+      <p class="badge-success">{{ resultadoValidacion().estado }}</p>
+    </div>
+  }
+</div>

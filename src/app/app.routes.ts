@@ -38,7 +38,7 @@ export const routes: Routes = [
   },
   {
     path: 'perfil',
-    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent), // Ajustado al nombre de clase estándar
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
     canActivate: [authGuard],
     children: [
       {
@@ -65,11 +65,24 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    loadComponent: () => import('./features/admin/admin-gestion/admin-gestion.component').then(m => m.AdminGestionComponent),
+    loadComponent: () => import('./features/admin/admin/admin.component').then(m => m.AdminComponent), // <--- CORREGIDO: Carga el contenedor con la barra lateral
     canActivate: [authGuard, adminGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/admin/admin/admin-gestion/admin-gestion.component').then(m => m.AdminGestionComponent)
+      },
+      {
+        path: 'validar',
+        loadComponent: () => import('./features/admin/admin/validar-qr/validar-qr.component').then(m => m.ValidarQrComponent)
+      },
+      {
+        path: 'reportes',
+        loadComponent: () => import('./features/admin/admin/admin-reportes/admin-reportes.component').then(m => m.AdminReportesComponent)
+      }
+    ]
   },
   {
-
     path: '**',
     redirectTo: 'home'
   }

@@ -1,0 +1,77 @@
+.reportes-container {
+  max-width: 1000px;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: #121212;
+  color: #fff;
+  border-radius: 12px;
+  border: 1px solid #333;
+}
+.reportes-container h2 {
+  color: #f5b301;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.metric-card {
+  background: #1e1e1e;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #444;
+  text-align: center;
+}
+.metric-card h3 {
+  margin: 0 0 0.5rem 0;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+.metric-value {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #f5b301;
+}
+.export-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+.btn-export {
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+}
+.btn-export.pdf { background: #ef4444; color: #fff; }
+.btn-export.excel { background: #22c55e; color: #fff; }
+.ranking-section {
+  background: #1a1a1a;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+.ranking-section h3 {
+  color: #f5b301;
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+.ranking-section ul {
+  list-style: none;
+  padding: 0;
+}
+.ranking-section li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px dashed #333;
+  font-size: 0.95rem;
+}

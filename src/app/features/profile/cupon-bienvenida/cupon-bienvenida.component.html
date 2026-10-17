@@ -1,38 +1,30 @@
-<section class="cupon-bienvenida">
-  <h2 class="cupon-bienvenida__subtitle">Tus Beneficios</h2>
+<div class="cupones-perfil-container">
+  <h2>Mis Cupones de Descuento</h2>
+  <p class="sub">Aquí puedes ver los cupones activos disponibles para utilizar en tus próximas compras.</p>
 
-  @if (cargandoCupones()) {
-    <div class="cupon-bienvenida__status">
-      <div class="pulse-dot pulse-dot-loading"></div>
-      <p>Buscando tus cupones disponibles...</p>
-    </div>
-  } @else if (error()) {
-    <div class="cupon-bienvenida__status cupon-bienvenida__status--error">
-      <p>{{ error() }}</p>
-    </div>
-  } @else if (cuponDisponible()) {
-    <article class="tarjeta-cupon">
-      <div class="tarjeta-cupon__header">
-        <h3 class="tarjeta-cupon__titulo">¡Tu Regalo de Bienvenida!</h3>
-      </div>
-
-      <div class="tarjeta-cupon__body">
-        <span class="tarjeta-cupon__numero">{{ cuponDisponible()?.porcentaje_descuento }}</span>
-        <span class="tarjeta-cupon__unidad">% OFF</span>
-      </div>
-
-      <p class="tarjeta-cupon__info">Presentá este código en tu próxima compra de entradas o <strong>candy bar</strong>.</p>
-
-      <div class="tarjeta-cupon__codigo-wrapper">
-        <span class="tarjeta-cupon__codigo">{{ cuponDisponible()?.codigo }}</span>
-      </div>
-    </article>
+  @if (cargando()) {
+    <p class="loading">Cargando cupones...</p>
   } @else {
-    <div class="cupon-bienvenida__empty">
-      <p>
-        Actualmente no tienes cupones disponibles. <br>
-        ¡Mantenete atento a nuestras promociones para obtener descuentos exclusivos!
-      </p>
+    <div class="cupones-grid">
+      @for (c of cuponesDisponibles(); track c.id) {
+        <div class="cupon-card">
+          <div class="cupon-header">
+            <span class="cupon-codigo">{{ c.codigo }}</span>
+            <span class="cupon-descuento">{{ c.porcentaje_descuento }}% OFF</span>
+          </div>
+          <div class="cupon-body">
+            @if (c.solo_mayores_50) {
+              <p class="tag-exclusivo">✨ Beneficio Exclusivo Mayores de 50 años</p>
+            } @else {
+              <p class="tag-general">🎟️ Cupón promocional aplicable en el checkout</p>
+            }
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <p>No tienes cupones de descuento disponibles en este momento.</p>
+        </div>
+      }
     </div>
   }
-</section>
+</div>

@@ -1,0 +1,219 @@
+<div class="admin-container">
+  <h2>Panel de Administración - CineLanús</h2>
+
+  <!-- FORMULARIO DE PELÍCULA -->
+  <form [formGroup]="peliculaForm" (ngSubmit)="guardarPelicula()" class="admin-form">
+    <h3>Nueva Película en Cartelera</h3>
+
+    <div class="form-group">
+      <label>Título de la Película:</label>
+      <input type="text" formControlName="titulo" placeholder="Ej. Interstellar">
+    </div>
+
+    <div class="form-group">
+      <label>Sinopsis:</label>
+      <textarea formControlName="sinopsis" placeholder="Descripción de la película..."></textarea>
+    </div>
+
+    <!-- SECCIÓN DE GÉNEROS -->
+    <div class="form-group">
+      <label>Géneros de la Película:</label>
+      <div class="generos-grid">
+        @for (genero of generosDisponibles(); track genero.id) {
+          <button
+            type="button"
+            class="genero-chip"
+            [class.selected]="generosSeleccionados().includes(genero.id)"
+            (click)="toggleGenero(genero.id)">
+            {{ genero.nombre }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Duración (minutos):</label>
+        <input type="number" formControlName="duracion_minutos" placeholder="120">
+      </div>
+      <div class="form-group">
+        <label>Restricción de Edad:</label>
+        <select formControlName="restriccion_edad">
+          <option [value]="0">ATP (Apta para todo público)</option>
+          <option [value]="13">+13 años</option>
+          <option [value]="16">+16 años</option>
+          <option [value]="18">+18 años</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>URL del Póster:</label>
+        <input type="text" formControlName="url_imagen" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label>URL del Banner (Hero):</label>
+        <input type="text" formControlName="hero_imagen" placeholder="https://...">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Precio Base ($):</label>
+        <input type="number" formControlName="precio_base" placeholder="5000">
+      </div>
+      <div class="form-group">
+        <label>Estado:</label>
+        <select formControlName="estado">
+          <option value="cartelera">Cartelera</option>
+          <option value="proximamente">Próximamente</option>
+          <option value="archivada">Archivada</option>
+        </select>
+      </div>
+    </div>
+
+    <button
+      type="submit"
+      appAdminAccion
+      [tipoAccion]="'pelicula'"
+      [disabled]="cargando()">
+      @if (cargando()) { Guardando... } @else { Registrar Película }
+    </button>
+  </form>
+
+  @if (mensajeExito()) {
+    <div class="alert success">{{ mensajeExito() }}</div>
+  }
+  @if (mensajeError()) {
+    <div class="alert error">{{ mensajeError() }}</div>
+  }
+
+  <!-- FORMULARIO DE PROGRAMACIÓN DE FUNCIONES (ASIGNACIÓN AUTOMÁTICA) -->
+  <form [formGroup]="funcionForm" (ngSubmit)="guardarFuncion()" class="admin-form" style="margin-top: 3rem;">
+    <h3>Programar Nueva Función (Asignación Automática de Sala)</h3>
+
+    <div class="form-group">
+      <label>Seleccionar Película:</label>
+      <select formControlName="pelicula_id">
+        <option value="" disabled>Selecciona una película...</option>
+        @for (peli of peliculasDisponibles(); track peli.id) {
+          <option [value]="peli.id">{{ peli.titulo }} ({{ peli.duracion_minutos }} min)</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Fecha y Hora de Inicio:</label>
+        <input type="datetime-local" formControlName="fecha_hora">
+      </div>
+
+      <div class="form-group">
+        <label>Formato:</label>
+        <select formControlName="formato">
+          <option value="2D">2D</option>
+          <option value="3D">3D</option>
+          <option value="4D">4D</option>
+          <option value="5D">5D</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Idioma:</label>
+        <select formControlName="idioma">
+          <option value="castellano">Castellano</option>
+          <option value="subtitulada">Subtitulada</option>
+        </select>
+      </div>
+    </div>
+
+    <button
+      type="submit"
+      appAdminAccion
+      [tipoAccion]="'funcion'"
+      [disabled]="cargandoFuncion()">
+      @if (cargandoFuncion()) { Asignando Sala... } @else { Programar Función Automática }
+    </button>
+  </form>
+
+  @if (mensajeFuncionExito()) {
+    <div class="alert success">{{ mensajeFuncionExito() }}</div>
+  }
+  @if (mensajeFuncionError()) {
+    <div class="alert error">{{ mensajeFuncionError() }}</div>
+  }
+
+  <!-- GESTIÓN DE CUPONES Y DESCUENTOS (DEBAJO DE SALAS Y FUNCIONES) -->
+  <form [formGroup]="cuponForm" (ngSubmit)="guardarCupon()" class="admin-form" style="margin-top: 3rem;">
+    <h3>Gestión de Cupones y Descuentos</h3>
+
+    <div class="form-group">
+      <label>Código del Cupón:</label>
+      <input type="text" formControlName="codigo" placeholder="Ej. VERANO2026">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Porcentaje de Descuento (%):</label>
+        <input type="number" formControlName="porcentaje_descuento" min="1" max="100">
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: #ddd; margin-top: 1.5rem;">
+          <input type="checkbox" formControlName="solo_mayores_50">
+          Exclusivo para mayores de 50 años
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="admin-btn" [disabled]="cargandoCupon()">
+      {{ cargandoCupon() ? 'Guardando...' : 'Crear Cupón' }}
+    </button>
+  </form>
+
+  @if (mensajeCuponExito()) {
+    <div class="alert success">{{ mensajeCuponExito() }}</div>
+  }
+  @if (mensajeCuponError()) {
+    <div class="alert error">{{ mensajeCuponError() }}</div>
+  }
+
+  <div class="listado-seccion" style="margin-top: 2rem;">
+    <h3 style="color: #f5b301; font-size: 1.1rem; margin-bottom: 1rem;">Cupones Registrados</h3>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descuento</th>
+          <th>Restricción</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of cupones(); track c.id) {
+          <tr>
+            <td><strong>{{ c.codigo }}</strong></td>
+            <td>{{ c.porcentaje_descuento }}%</td>
+            <td>{{ c.solo_mayores_50 ? 'Mayores de 50' : 'General' }}</td>
+            <td>
+              <span class="badge" [class.activo]="c.activo" [class.inactivo]="!c.activo">
+                {{ c.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <button class="btn-toggle" (click)="toggleEstadoCupon(c)">
+                {{ c.activo ? 'Desactivar' : 'Activar' }}
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty">No hay cupones registrados.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

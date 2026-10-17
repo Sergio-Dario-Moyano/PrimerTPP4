@@ -1,0 +1,73 @@
+<div class="admin-container">
+  <h2>Gestión de Cupones y Descuentos</h2>
+
+  <form [formGroup]="cuponForm" (ngSubmit)="guardarCupon()" class="admin-form">
+    <h3>Crear Nuevo Cupón</h3>
+
+    <div class="form-group">
+      <label>Código del Cupón:</label>
+      <input type="text" formControlName="codigo" placeholder="Ej. VERANO2026">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Porcentaje de Descuento (%):</label>
+        <input type="number" formControlName="porcentaje_descuento" min="1" max="100">
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label>
+          <input type="checkbox" formControlName="solo_mayores_50">
+          Exclusivo para mayores de 50 años
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="admin-btn" [disabled]="cargando()">
+      {{ cargando() ? 'Guardando...' : 'Crear Cupón' }}
+    </button>
+  </form>
+
+  @if (mensajeExito()) {
+    <div class="alert success">{{ mensajeExito() }}</div>
+  }
+  @if (mensajeError()) {
+    <div class="alert error">{{ mensajeError() }}</div>
+  }
+
+  <div class="listado-seccion" style="margin-top: 3rem;">
+    <h3>Cupones Existentes</h3>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Descuento</th>
+          <th>Restricción</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of cupones(); track c.id) {
+          <tr>
+            <td><strong>{{ c.codigo }}</strong></td>
+            <td>{{ c.porcentaje_descuento }}%</td>
+            <td>{{ c.solo_mayores_50 ? 'Mayores de 50' : 'General' }}</td>
+            <td>
+              <span class="badge" [class.activo]="c.activo" [class.inactivo]="!c.activo">
+                {{ c.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <button class="btn-toggle" (click)="toggleEstadoCupon(c)">
+                {{ c.activo ? 'Desactivar' : 'Activar' }}
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="empty">No hay cupones registrados.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

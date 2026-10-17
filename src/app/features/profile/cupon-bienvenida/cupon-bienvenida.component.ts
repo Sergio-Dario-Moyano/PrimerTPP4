@@ -1,87 +1,75 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../../core/services/supabase';
-
-export interface Cupon {
-  id: string;
-  codigo: string;
-  porcentaje_descuento: number;
-  solo_mayores_50: boolean;
-  activo: boolean;
-}
 
 @Component({
   selector: 'app-cupon-bienvenida',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './cupon-bienvenida.component.html',
   styleUrls: ['./cupon-bienvenida.component.css']
 })
 export class CuponBienvenidaComponent implements OnInit {
-  private supabaseService = inject(SupabaseService);
+  private supabase = inject(SupabaseService).client;
 
-  cargandoCupones = signal<boolean>(true);
-  error = signal<string | null>(null);
-  cuponDisponible = signal<Cupon | null>(null);
+  cargando = signal<boolean>(true);
+  cuponesDisponibles = signal<any[]>([]);
 
-  ngOnInit(): void {
-    this.verificarCuponBienvenida();
+  async ngOnInit() {
+    await this.cargarCuponesUsuario();
   }
 
-  async verificarCuponBienvenida(): Promise<void> {
-    this.cargandoCupones.set(true);
-    this.error.set(null);
-    const supabase = this.supabaseService.client;
-
+  async cargarCuponesUsuario() {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      const usuarioActivo = authData?.user;
+      this.cargando.set(true);
 
-      if (authError || !usuarioActivo) {
-        throw new Error('No hay usuario activo para validar cupones.');
+      // 1. Obtener el usuario actual y su fecha de nacimiento para validar la regla de los mayores de 50 años
+      const { data: authData } = await this.supabase.auth.getUser();
+      const userId = authData?.user?.id;
+
+      let esMayorDe50 = false;
+
+      if (userId) {
+        const { data: perfil } = await this.supabase
+          .from('perfiles')
+          .select('fecha_nacimiento')
+          .eq('id', userId)
+          .single();
+
+        if (perfil && perfil.fecha_nacimiento) {
+          const fnac = new Date(perfil.fecha_nacimiento);
+          const hoy = new Date();
+          let edad = hoy.getFullYear() - fnac.getFullYear();
+          const m = hoy.getMonth() - fnac.getMonth();
+          if (m < 0 || (m === 0 && hoy.getDate() < fnac.getDate())) {
+            edad--;
+          }
+          esMayorDe50 = edad >= 50;
+        }
       }
 
-      // maybeSingle() evita que Supabase lance un error si el cupón no existe
-      const { data: cuponData, error: cuponError } = await supabase
+      // 2. Consultar todos los cupones activos en la base de datos
+      const { data: cupones, error } = await this.supabase
         .from('cupones')
         .select('*')
-        .eq('codigo', 'BIENVENIDA')
-        .eq('activo', true)
-        .maybeSingle();
+        .eq('activo', true);
 
-      if (cuponError || !cuponData) {
-        this.cuponDisponible.set(null);
-        return;
-      }
+      if (error) throw error;
 
-      const { data: compraPrevia, error: compraError } = await supabase
-        .from('compras')
-        .select('id')
-        .eq('perfil_id', usuarioActivo.id)
-        .eq('cupon_id', cuponData.id)
-        .limit(1);
+      // 3. Filtrar según la regla de negocio (si el cupón es solo para mayores de 50, validamos la edad del usuario)
+      const cuponesValidos = (cupones || []).filter(c => {
+        if (c.solo_mayores_50) {
+          return esMayorDe50;
+        }
+        return true;
+      });
 
-      if (compraError) throw new Error('Error al validar el historial de uso.');
-
-      if (compraPrevia && compraPrevia.length > 0) {
-        this.cuponDisponible.set(null);
-      } else {
-        // Tipado explícito y seguro
-        this.cuponDisponible.set({
-          id: cuponData.id,
-          codigo: cuponData.codigo,
-          porcentaje_descuento: Number(cuponData.porcentaje_descuento),
-          solo_mayores_50: cuponData.solo_mayores_50,
-          activo: cuponData.activo
-        });
-      }
+      this.cuponesDisponibles.set(cuponesValidos);
 
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error desconocido al cargar el cupón';
-      console.error(msg);
-      this.error.set('No pudimos verificar tus cupones en este momento.');
-      this.cuponDisponible.set(null);
+      console.error('Error cargando cupones para el perfil:', err);
     } finally {
-      this.cargandoCupones.set(false);
+      this.cargando.set(false);
     }
   }
 }

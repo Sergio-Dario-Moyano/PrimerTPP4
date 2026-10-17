@@ -328,7 +328,7 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
         .in('estado', ['validada', 'pendiente'])
         .in('butaca_id', butacasDeseadasIds);
 
-      // 💡 REEMPLAZO DE ALERT POR MODAL GLOBAL
+      // REEMPLAZO DE ALERT POR MODAL GLOBAL
       if (butacasRobadas && butacasRobadas.length > 0) {
         this.modalService.open(
           'Butacas no disponibles',

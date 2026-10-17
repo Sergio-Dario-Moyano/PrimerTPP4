@@ -1,0 +1,225 @@
+.admin-container {
+  color: #fff;
+}
+
+.admin-container h2 {
+  color: #f5b301;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.admin-form {
+  background: #1a1a1a;
+  border: 1px solid #282828;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.admin-form h3 {
+  color: #f5b301;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  color: #ccc;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row > div {
+  flex: 1;
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+  }
+}
+
+input, select, textarea {
+  background: #222;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #f5b301;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Chips de Géneros */
+.generos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.genero-chip {
+  background: #222;
+  color: #aaa;
+  border: 1px solid #444;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.genero-chip:hover {
+  background: #333;
+  color: #fff;
+}
+
+.genero-chip.selected {
+  background: #f5b301;
+  color: #000;
+  border-color: #f5b301;
+}
+
+/* Botones principales de acción */
+button[type="submit"], .admin-btn {
+  background: #f5b301;
+  color: #000;
+  border: none;
+  padding: 0.85rem;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+
+button[type="submit"]:hover, .admin-btn:hover {
+  background: #ffc107;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Alertas */
+.alert {
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.alert.success {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.alert.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Tablas y Badges */
+.listado-seccion {
+  background: #1a1a1a;
+  border: 1px solid #282828;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.admin-table th, .admin-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #282828;
+  font-size: 0.9rem;
+}
+
+.admin-table th {
+  background: #222;
+  color: #f5b301;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.badge.activo {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.badge.inactivo {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.btn-toggle {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle:hover {
+  background: #3a3a3a;
+  border-color: #f5b301;
+  color: #f5b301;
+}
+
+.empty {
+  text-align: center;
+  color: #777;
+  font-style: italic;
+  padding: 2rem !important;
+}

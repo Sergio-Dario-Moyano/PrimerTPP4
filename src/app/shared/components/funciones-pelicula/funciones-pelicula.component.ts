@@ -1,7 +1,6 @@
 import { Component, input, output, signal, computed, effect } from '@angular/core';
-import { DatePipe, UpperCasePipe } from '@angular/common'; // 💡 Importamos solo los pipes necesarios
-import { FuncionPelicula } from '../../../core/models/Funcion.model'; // 💡 Importamos la interfaz desde el modelo
-
+import { DatePipe, UpperCasePipe } from '@angular/common';
+import { FuncionPelicula } from '../../../core/models/Funcion.model';
 
 @Component({
   selector: 'app-funciones-pelicula',
@@ -19,10 +18,9 @@ export class FuncionesPeliculaComponent {
   fechaSeleccionada = signal<string | null>(null);
 
   constructor() {
-    // Autorizamos la escritura del Signal dentro del efecto
     effect(() => {
       const dias = this.diasDisponibles();
-      if (dias.length > 0 && !this.fechaSeleccionada()) {
+      if (dias.length > 0 && (!this.fechaSeleccionada() || !dias.some(d => d.key === this.fechaSeleccionada()))) {
         this.fechaSeleccionada.set(dias[0].key);
       }
     }, { allowSignalWrites: true });
@@ -34,35 +32,46 @@ export class FuncionesPeliculaComponent {
     return new Date(fechaLimpiada);
   }
 
+  // 💡 Filtrar días para mostrar únicamente los que tengan funciones futuras
   diasDisponibles = computed(() => {
+    const ahora = new Date();
     const mapDias = new Map<string, string>();
 
     this.funciones().forEach(f => {
       const fechaObj = this.parseFecha(f.fecha_hora);
-      const key = fechaObj.toISOString().split('T')[0];
 
-      if (!mapDias.has(key)) {
-        const diaSemana = fechaObj.toLocaleDateString('es-AR', { weekday: 'short' }).toUpperCase();
-        const diaMes = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
-        mapDias.set(key, `${diaSemana} ${diaMes}`);
+      // Solo incluimos la fecha si la función aún no ha pasado
+      if (fechaObj >= ahora) {
+        const key = fechaObj.toISOString().split('T')[0];
+
+        if (!mapDias.has(key)) {
+          const diaSemana = fechaObj.toLocaleDateString('es-AR', { weekday: 'short' }).toUpperCase();
+          const diaMes = fechaObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+          mapDias.set(key, `${diaSemana} ${diaMes}`);
+        }
       }
     });
 
     return Array.from(mapDias.entries()).map(([key, label]) => ({ key, label }));
   });
 
+  // 💡 Filtrar funciones por fecha seleccionada y descartar las ya pasadas
   funcionesFiltradas = computed(() => {
+    const ahora = new Date();
     const sel = this.fechaSeleccionada();
 
+    // Primero descartamos todas las funciones cuya fecha/hora ya haya transcurrido
+    const funcionesFuturas = this.funciones().filter(f => {
+      return this.parseFecha(f.fecha_hora) >= ahora;
+    });
+
     const filtradas = !sel
-      ? this.funciones()
-      : this.funciones().filter(f => {
+      ? funcionesFuturas
+      : funcionesFuturas.filter(f => {
           const key = this.parseFecha(f.fecha_hora).toISOString().split('T')[0];
           return key === sel;
         });
 
-    //  Devolvemos un objeto enriquecido con 'fechaObj'
-    // para que el HTML no tenga que procesar strings en cada renderizado.
     return filtradas.map(f => ({
       ...f,
       fechaObj: this.parseFecha(f.fecha_hora)
