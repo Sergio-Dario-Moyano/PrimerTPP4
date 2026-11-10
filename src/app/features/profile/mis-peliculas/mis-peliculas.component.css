@@ -95,8 +95,7 @@
   background: linear-gradient(to top, #121212 0%, #1a1a1a 100%);
   flex-grow: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 }
 
 .pelicula-card__titulo {
@@ -104,7 +103,6 @@
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
-  text-align: center;
   line-height: 1.2;
 }
 
@@ -112,3 +110,8 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.pelicula-card__fecha { display: block; color: #9ca3af; font-size: 0.75rem; margin-top: 0.2rem; }
+.pelicula-card__estrellas { display: block; color: #444; font-size: 0.95rem; letter-spacing: 1px; margin-top: 0.2rem; }
+.pelicula-card__estrella--activa { color: #f5b301; }
+.pelicula-card__calificar { display: inline-block; color: #f5b301; font-size: 0.8rem; margin-top: 0.25rem; }

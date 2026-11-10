@@ -7,6 +7,10 @@ export class ReservaService {
   butacas = signal<ButacaReservada[]>([]);
   combos = signal<ComboReservado[]>([]);
   funcionId = signal<string | null>(null);
+  /** Precio base vigente de la película (normal o preventa), para combos con entrada y entradas gratis. */
+  precioBase = signal<number>(0);
+  /** true = compra solo de candy, sin entradas ni función. */
+  soloCandy = signal<boolean>(false);
 
   totalCombos = computed(() => {
     return this.combos().reduce((acc, combo) => acc + (combo.precioUnitario * combo.cantidad), 0);
@@ -30,6 +34,8 @@ export class ReservaService {
     this.butacas.set([]);
     this.combos.set([]);
     this.funcionId.set(null);
+    this.precioBase.set(0);
+    this.soloCandy.set(false);
   }
 
   establecerFuncion(id: string) {

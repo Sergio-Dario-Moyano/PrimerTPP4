@@ -306,3 +306,19 @@
     top: 2rem;
   }
 }
+
+/* ----- Beneficios: crédito y entradas gratis ----- */
+.beneficio {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem;
+  background: #1c1c1c; border: 1px solid #333; border-radius: 8px;
+  padding: 0.8rem 1rem; margin-bottom: 0.75rem; color: #ddd; font-size: 0.9rem; cursor: pointer;
+}
+.beneficio input[type="checkbox"] { width: 18px; height: 18px; accent-color: #f5b301; }
+.beneficio--ok { border-color: #22c55e; color: #4ade80; cursor: default; }
+.beneficio__contador { display: flex; align-items: center; gap: 0.5rem; }
+.beneficio__contador button {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid #555;
+  background: #2a2a2a; color: #fff; cursor: pointer; font-weight: 700;
+}
+.beneficio__contador button:disabled { opacity: 0.35; cursor: not-allowed; }
+.puntos-a-ganar { color: #f5b301; font-size: 0.9rem; margin: 0.25rem 0 0.75rem; }

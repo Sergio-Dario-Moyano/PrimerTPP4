@@ -1,0 +1,134 @@
+<div class="admin-container">
+  <h2>Funciones</h2>
+  <p class="admin-sub">La sala se asigna sola: nunca se superponen dos funciones y se respetan 30 minutos entre una y otra.</p>
+
+  <form [formGroup]="form" (ngSubmit)="programar()" class="admin-form">
+    <h3>Programar funciones</h3>
+
+    <div class="generos-grid" role="tablist">
+      <button type="button" class="genero-chip" [class.selected]="modo() === 'unica'" (click)="cambiarModo('unica')">Una sola fecha</button>
+      <button type="button" class="genero-chip" [class.selected]="modo() === 'recurrente'" (click)="cambiarModo('recurrente')">Repetir por días de la semana</button>
+    </div>
+
+    <div class="form-group">
+      <label for="peli">Película</label>
+      <select id="peli" formControlName="pelicula_id">
+        <option value="" disabled>Elegí una película…</option>
+        @for (p of peliculas(); track p.id) {
+          <option [value]="p.id">{{ p.titulo }} ({{ p.duracion_minutos }} min)</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="formato">Formato</label>
+        <select id="formato" formControlName="formato">
+          <option value="2D">2D</option><option value="3D">3D</option>
+          <option value="4D">4D</option><option value="5D">5D</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="idioma">Idioma</label>
+        <select id="idioma" formControlName="idioma">
+          <option value="castellano">Castellano</option>
+          <option value="subtitulada">Subtitulada</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="hora">Hora de inicio</label>
+        <input id="hora" type="text" formControlName="hora" appMascaraFecha="hora">
+        @if (form.controls.hora.hasError('horaInvalida')) { <span class="form-error">Hora inválida.</span> }
+      </div>
+    </div>
+
+    @if (modo() === 'unica') {
+      <div class="form-group">
+        <label for="fecha">Fecha</label>
+        <input id="fecha" type="text" formControlName="fecha" appMascaraFecha="fecha">
+        @if (form.controls.fecha.hasError('fechaInvalida')) { <span class="form-error">Fecha inválida.</span> }
+      </div>
+    } @else {
+      <div class="form-group">
+        <label>Días de la semana</label>
+        <div class="dias-semana">
+          @for (d of DIAS; track d.valor) {
+            <button type="button" class="genero-chip" [class.selected]="diasSeleccionados().includes(d.valor)" (click)="toggleDia(d.valor)">{{ d.nombre }}</button>
+          }
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="desde">Desde</label>
+          <input id="desde" type="text" formControlName="desde" appMascaraFecha="fecha">
+        </div>
+        <div class="form-group">
+          <label for="hasta">Hasta</label>
+          <input id="hasta" type="text" formControlName="hasta" appMascaraFecha="fecha">
+        </div>
+      </div>
+      <span class="form-ayuda">Ej.: Lun, Mar y Vie a las 18:00 entre el 01/12 y el 31/12 crea todas esas funciones y elige la sala de cada una.</span>
+    }
+
+    <button type="submit" appAdminAccion [disabled]="cargando()">
+      {{ cargando() ? 'Asignando salas…' : 'Programar' }}
+    </button>
+  </form>
+
+  @if (mensajeError()) { <div class="alert error">{{ mensajeError() }}</div> }
+
+  @if (resultado(); as r) {
+    @if (r.creadas.length) {
+      <div class="alert success">
+        Se crearon {{ r.creadas.length }} función(es):
+        <ul class="resultado-lista">
+          @for (c of r.creadas; track c.fecha.getTime()) {
+            <li>{{ c.fecha | date:'EEE dd/MM HH:mm' }} → {{ c.sala }}</li>
+          }
+        </ul>
+      </div>
+    }
+    @if (r.rechazadas.length) {
+      <div class="alert error">
+        No se pudieron crear {{ r.rechazadas.length }}:
+        <ul class="resultado-lista">
+          @for (c of r.rechazadas; track c.fecha.getTime()) {
+            <li>{{ c.fecha | date:'EEE dd/MM HH:mm' }}: {{ c.motivo }}</li>
+          }
+        </ul>
+      </div>
+    }
+  }
+
+  <div class="listado-seccion">
+    <h3>Próximas funciones</h3>
+    <div class="filtros-tabla">
+      <select [value]="filtroPelicula()" (change)="filtroPelicula.set($any($event.target).value)">
+        <option value="">Todas las películas</option>
+        @for (p of peliculas(); track p.id) { <option [value]="p.titulo">{{ p.titulo }}</option> }
+      </select>
+    </div>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Fecha</th><th>Película</th><th>Sala</th><th>Formato</th><th>Vendidas</th><th></th></tr></thead>
+        <tbody>
+          @for (f of funcionesFiltradas(); track f.id) {
+            <tr>
+              <td>{{ fechaDe(f) | date:'EEE dd/MM HH:mm' }}</td>
+              <td>{{ f.peliculas?.titulo }}</td>
+              <td>{{ f.salas?.nombre }}</td>
+              <td>{{ f.formato }} · {{ f.idioma }}</td>
+              <td>{{ f.entradas?.[0]?.count ?? 0 }}</td>
+              <td>
+                <button type="button" class="btn-toggle btn-toggle--peligro" (click)="eliminar(f)"
+                        [disabled]="(f.entradas?.[0]?.count ?? 0) > 0">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty">No hay funciones programadas.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

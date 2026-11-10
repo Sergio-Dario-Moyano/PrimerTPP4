@@ -1,55 +1,89 @@
 <main class="candy l-container">
   <div class="candy__layout">
 
-    <!-- COLUMNA IZQUIERDA: PRODUCTOS -->
     <div class="candy__main">
       <header class="candy__header">
-        <h1 class="candy__title">COLECCIONABLES Y COMBOS</h1>
-        <p class="candy__subtitle">Añade productos a tu reserva para saltarte la fila en el cine.</p>
+        <h1 class="candy__title">CANDY BAR</h1>
+        @if (soloCandy()) {
+          <p class="candy__subtitle">Comprá online sin hacer fila: pagás acá y retirás en el mostrador mostrando el QR. No hace falta tener entrada.</p>
+        } @else {
+          <p class="candy__subtitle">Sumá combos o productos a tu compra y retiralos con el mismo QR de tu entrada.</p>
+        }
       </header>
 
-      <div class="candy__grid">
-        @for (prod of productos(); track prod.id) {
-          <article class="product-card">
+      <!-- Plantilla de tarjeta reutilizada para combos y productos -->
+      <ng-template #tarjeta let-prod>
+        <article class="product-card" [class.product-card--destacado]="prod.incluyeEntrada || prod.enOferta">
+          <div class="product-card__image-box">
+            @if (prod.incluyeEntrada) {
+              <span class="product-card__badge product-card__badge--entrada">🎟️ INCLUYE ENTRADA</span>
+            } @else if (prod.enOferta) {
+              <span class="product-card__badge">OFERTA</span>
+            }
+            <img [src]="prod.imagenUrl" [alt]="prod.nombre" class="product-card__img"
+                 (error)="$any($event.target).src = IMAGEN_DEFECTO">
+          </div>
 
-            <div class="product-card__image-box">
-              @if (prod.enOferta) {
-                <span class="product-card__badge">OFERTA</span>
+          <div class="product-card__info">
+            <h3 class="product-card__title">{{ prod.nombre }}</h3>
+            @if (prod.descripcion) { <p class="product-card__desc">{{ prod.descripcion }}</p> }
+            @if (prod.incluyeEntrada) {
+              <p class="product-card__nota">Precio fijo: cubre 1 entrada general + el combo.</p>
+            }
+
+            <div class="product-card__actions">
+              <span class="product-card__price">$ {{ prod.precio | number:'1.0-0' }}</span>
+
+              @if (getCantidad(prod) === 0) {
+                <button class="product-card__btn-add" (click)="incrementar(prod)" [disabled]="!puedeAgregar(prod)">Agregar</button>
+              } @else {
+                <div class="quantity-controls">
+                  <button class="quantity-controls__btn" (click)="decrementar(prod)" aria-label="Quitar uno">-</button>
+                  <span class="quantity-controls__number">{{ getCantidad(prod) }}</span>
+                  <button class="quantity-controls__btn" (click)="incrementar(prod)" [disabled]="!puedeAgregar(prod)" aria-label="Agregar uno">+</button>
+                </div>
               }
-              <img [src]="prod.imagenUrl" [alt]="prod.nombre" class="product-card__img"
-                   onerror="this.src='https://via.placeholder.com/400x300/cbd4df/64748b?text=Combo'">
             </div>
+            @if (prod.incluyeEntrada && !puedeAgregar(prod) && getCantidad(prod) === 0) {
+              <span class="product-card__nota">Ya cubriste todas tus entradas con combos.</span>
+            }
+          </div>
+        </article>
+      </ng-template>
 
-            <div class="product-card__info">
-              <h3 class="product-card__title">{{ prod.nombre }}</h3>
-              <p class="product-card__desc">{{ prod.descripcion }}</p>
+      @if (combosVisibles().length > 0) {
+        <h2 class="candy__seccion">⭐ Combos destacados</h2>
+        <div class="candy__grid">
+          @for (prod of combosVisibles(); track prod.id) {
+            <ng-container *ngTemplateOutlet="tarjeta; context: { $implicit: prod }" />
+          }
+        </div>
+      }
 
-              <div class="product-card__actions">
-                <span class="product-card__price">$ {{ prod.precio | number:'1.0-0' }}</span>
-
-                @if (getCantidad(prod.id) === 0) {
-                  <button class="product-card__btn-add" (click)="incrementar(prod.id)">Agregar</button>
-                } @else {
-                  <div class="quantity-controls">
-                    <button class="quantity-controls__btn" (click)="decrementar(prod.id)" aria-label="Quitar uno">-</button>
-                    <span class="quantity-controls__number">{{ getCantidad(prod.id) }}</span>
-                    <button class="quantity-controls__btn" (click)="incrementar(prod.id)" aria-label="Agregar uno">+</button>
-                  </div>
-                }
-              </div>
-            </div>
-
-          </article>
-        }
-      </div>
+      @if (productos().length > 0) {
+        <h2 class="candy__seccion">Productos</h2>
+        <div class="candy__categorias">
+          <button class="candy__chip" [class.candy__chip--activo]="categoriaSeleccionada() === null" (click)="categoriaSeleccionada.set(null)">Todos</button>
+          @for (c of categorias(); track c.id) {
+            <button class="candy__chip" [class.candy__chip--activo]="categoriaSeleccionada() === c.id" (click)="categoriaSeleccionada.set(c.id)">{{ c.nombre }}</button>
+          }
+        </div>
+        <div class="candy__grid">
+          @for (prod of productosFiltrados(); track prod.id) {
+            <ng-container *ngTemplateOutlet="tarjeta; context: { $implicit: prod }" />
+          }
+        </div>
+      }
     </div>
 
-    <!-- COLUMNA DERECHA: RESUMEN DE COMPRA -->
     <aside class="candy__summary">
       <app-resumen-compra
+        [soloCandy]="soloCandy()"
+        [deshabilitarContinuar]="soloCandy() && itemsCarrito().length === 0"
+        [textoBoton]="soloCandy() ? 'Ir a pagar' : 'Continuar'"
         [pelicula]="{
             titulo: pelicula()?.titulo || '',
-            formato: pelicula()?.formatos?.[0] || '2D',
+            formato: '',
             posterUrl: pelicula()?.poster_url || ''
           }"
         [funcion]="{
@@ -61,6 +95,7 @@
         [butacas]="nombresButacas()"
         [entradas]="resumenEntradas()"
         [candy]="resumenCandy()"
+        [descuentos]="descuentos()"
         [cargoServicioEntradas]="cargoServicioEntradas()"
         [cargoServicioCandy]="cargoServicioCandy()"
         (onContinuar)="irAlPago()">

@@ -1,0 +1,34 @@
+<div class="dropzone-wrapper">
+  <span class="dropzone__etiqueta">{{ etiqueta() }}</span>
+
+  <label class="dropzone"
+         [class.dropzone--activa]="arrastrando()"
+         [class.dropzone--con-imagen]="url()"
+         [class.dropzone--banner]="formato() === 'banner'"
+         [class.dropzone--cuadrado]="formato() === 'cuadrado'"
+         (dragover)="onDragOver($event)"
+         (dragleave)="onDragLeave($event)"
+         (drop)="onDrop($event)">
+
+    <input type="file" accept="image/*" class="dropzone__input"
+           [disabled]="deshabilitado() || subiendo()"
+           (change)="onSeleccion($event)">
+
+    @if (subiendo()) {
+      <span class="dropzone__texto">Subiendo imagen…</span>
+    } @else if (url()) {
+      <img class="dropzone__preview" [src]="url()" [alt]="etiqueta()">
+      <span class="dropzone__cambiar">Arrastrá otra imagen o hacé clic para cambiarla</span>
+    } @else {
+      <span class="dropzone__icono">🖼️</span>
+      <span class="dropzone__texto">Arrastrá la imagen acá<br><small>o hacé clic para elegirla (máx. 5 MB)</small></span>
+    }
+  </label>
+
+  @if (url() && !subiendo()) {
+    <button type="button" class="dropzone__quitar" (click)="quitar()">Quitar imagen</button>
+  }
+  @if (error()) {
+    <span class="dropzone__error">{{ error() }}</span>
+  }
+</div>

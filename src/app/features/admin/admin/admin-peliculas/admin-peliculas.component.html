@@ -1,0 +1,138 @@
+<div class="admin-container">
+  <h2>Películas</h2>
+  <p class="admin-sub">Alta y edición de películas. Las imágenes se suben arrastrándolas.</p>
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" class="admin-form">
+    <h3>{{ editando() ? 'Editando: ' + editando()!.titulo : 'Nueva película' }}</h3>
+
+    <div class="form-group">
+      <label for="titulo">Título</label>
+      <input id="titulo" type="text" formControlName="titulo" placeholder="Ej. Interstellar">
+    </div>
+
+    <div class="form-group">
+      <label for="sinopsis">Sinopsis</label>
+      <textarea id="sinopsis" formControlName="sinopsis" placeholder="De qué trata la película…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Géneros (podés elegir varios)</label>
+      <div class="generos-grid">
+        @for (g of generos(); track g.id) {
+          <button type="button" class="genero-chip"
+                  [class.selected]="generosSeleccionados().includes(g.id)"
+                  (click)="toggleGenero(g.id)">{{ g.nombre }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="form-row form-row--imagenes">
+      <app-image-dropzone formControlName="url_imagen" etiqueta="Póster (vertical)" carpeta="posters" formato="poster" />
+      <app-image-dropzone formControlName="hero_imagen" etiqueta="Banner / Hero (horizontal)" carpeta="heros" formato="banner" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="duracion">Duración (minutos)</label>
+        <input id="duracion" type="number" formControlName="duracion_minutos">
+      </div>
+      <div class="form-group">
+        <label for="edad">Restricción de edad</label>
+        <select id="edad" formControlName="restriccion_edad">
+          <option [ngValue]="0">ATP (sin restricción)</option>
+          <option [ngValue]="13">+13 años</option>
+          <option [ngValue]="18">+18 años</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="precio">Precio base ($)</label>
+        <input id="precio" type="number" formControlName="precio_base">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="estado">Estado</label>
+        <select id="estado" formControlName="estado">
+          <option value="cartelera">En cartelera</option>
+          <option value="proximamente">Próximamente</option>
+          <option value="archivada">Archivada (oculta)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="estreno">Fecha de estreno</label>
+        <input id="estreno" type="text" formControlName="fecha_estreno" appMascaraFecha="fecha">
+        @if (form.controls.fecha_estreno.hasError('fechaInvalida')) {
+          <span class="form-error">Fecha inválida (dd/mm/aaaa).</span>
+        }
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="con_preventa">
+          Habilitar preventa ({{ DIAS_PREVENTA }} días antes del estreno)
+        </label>
+        <span class="form-ayuda">Durante la preventa se cobra el precio especial; desde el estreno vuelve el precio base.</span>
+      </div>
+      @if (form.controls.con_preventa.value) {
+        <div class="form-group">
+          <label for="preventa">Precio de preventa ($)</label>
+          <input id="preventa" type="number" formControlName="preventa_precio">
+        </div>
+      }
+    </div>
+
+    <div class="admin-form__acciones">
+      <button type="submit" appAdminAccion [disabled]="cargando()">
+        {{ cargando() ? 'Guardando…' : (editando() ? 'Guardar cambios' : 'Crear película') }}
+      </button>
+      @if (editando()) {
+        <button type="button" class="admin-btn admin-btn--secundario" (click)="cancelarEdicion()">Cancelar edición</button>
+      }
+    </div>
+  </form>
+
+  @if (mensajeExito()) { <div class="alert success">{{ mensajeExito() }}</div> }
+  @if (mensajeError()) { <div class="alert error">{{ mensajeError() }}</div> }
+
+  <div class="listado-seccion">
+    <h3>Películas registradas</h3>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th></th><th>Título</th><th>Estado</th><th>Estreno</th><th>Precio</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          @for (p of peliculas(); track p.id) {
+            <tr [class.fila-editando]="editando()?.id === p.id">
+              <td><img class="miniatura" [src]="p.url_imagen" [alt]="p.titulo"></td>
+              <td><strong>{{ p.titulo }}</strong><br><small>{{ p.duracion_minutos }} min · {{ p.restriccion_edad ? '+' + p.restriccion_edad : 'ATP' }}</small></td>
+              <td>
+                <span class="badge"
+                      [class.activo]="p.estado === 'cartelera'"
+                      [class.proximamente]="p.estado === 'proximamente'"
+                      [class.inactivo]="p.estado === 'archivada'">{{ p.estado }}</span>
+                @if (estaEnPreventa(p)) { <span class="badge preventa">preventa</span> }
+              </td>
+              <td>{{ p.fecha_estreno ? (p.fecha_estreno | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>
+                {{ p.precio_base | currency:'ARS':'$':'1.0-0' }}
+                @if (p.preventa_precio != null) { <br><small>Preventa: {{ p.preventa_precio | currency:'ARS':'$':'1.0-0' }}</small> }
+              </td>
+              <td class="acciones">
+                <button type="button" class="btn-toggle" (click)="editar(p)">Editar</button>
+                <button type="button" class="btn-toggle btn-toggle--peligro" (click)="archivar(p)">
+                  {{ p.estado === 'archivada' ? 'Reactivar' : 'Archivar' }}
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="empty">Todavía no hay películas.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

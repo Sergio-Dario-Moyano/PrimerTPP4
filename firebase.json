@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "public",
+    "public": "dist/cineutnApp/browser",
     "ignore": [
       "firebase.json",
       "**/.*",

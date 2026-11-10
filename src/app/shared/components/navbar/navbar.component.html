@@ -27,6 +27,12 @@
         <a routerLink="/" routerLinkActive="navbar__link--active" [routerLinkActiveOptions]="{exact: true}" class="navbar__link" (click)="cerrarMenu()">
           Cartelera
         </a>
+        <a routerLink="/proximamente" routerLinkActive="navbar__link--active" class="navbar__link" (click)="cerrarMenu()">
+          Próximamente
+        </a>
+        <a routerLink="/candy" routerLinkActive="navbar__link--active" class="navbar__link" (click)="cerrarMenu()">
+          Candy Bar
+        </a>
 
         @if (usuarioActual()) {
           <a routerLink="/perfil" routerLinkActive="navbar__link--active" class="navbar__link" (click)="cerrarMenu()">
@@ -40,10 +46,34 @@
             ⚙️ Panel Admin
           </a>
         }
+        @if (esEmpleado()) {
+          <a routerLink="/admin/validar" routerLinkActive="navbar__link--active" class="navbar__link navbar__link--admin" (click)="cerrarMenu()">
+            📷 Validar Entradas
+          </a>
+        }
       </div>
 
       <div class="navbar__actions">
         @if (usuarioActual()) {
+          <div class="navbar__avisos">
+            <button type="button" class="navbar__campana" (click)="toggleAvisos()"
+                    [attr.aria-label]="'Avisos de estreno: ' + avisos().length">
+              🔔
+              @if (avisos().length > 0) { <span class="navbar__campana-badge">{{ avisos().length }}</span> }
+            </button>
+            @if (avisosAbiertos()) {
+              <div class="navbar__avisos-panel">
+                @for (a of avisos(); track a.pelicula_id) {
+                  <button type="button" class="navbar__aviso" (click)="abrirAviso(a.pelicula_id)">
+                    <img [src]="a.url_imagen" alt="">
+                    <span>¡Ya están a la venta las entradas de <strong>{{ a.titulo }}</strong>!</span>
+                  </button>
+                } @empty {
+                  <p class="navbar__avisos-vacio">No tenés avisos nuevos. Activá alertas en <em>Próximamente</em>.</p>
+                }
+              </div>
+            }
+          </div>
           <span class="navbar__user-greeting">Hola, {{ usuarioActual()?.user_metadata?.['nombre'] }}</span>
           <button (click)="cerrarSesion()" class="navbar__btn" title="Cerrar sesión">Salir</button>
         } @else {

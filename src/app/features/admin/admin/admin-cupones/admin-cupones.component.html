@@ -1,73 +1,66 @@
 <div class="admin-container">
-  <h2>Gestión de Cupones y Descuentos</h2>
+  <h2>Cupones</h2>
+  <p class="admin-sub">
+    <strong>{{ CODIGO_BIENVENIDA }}</strong> es el cupón de la primera compra de cada usuario registrado: cambiá su porcentaje cuando quieras.
+    Los cupones "solo +50" únicamente los pueden usar clientes de 50 años o más.
+  </p>
 
-  <form [formGroup]="cuponForm" (ngSubmit)="guardarCupon()" class="admin-form">
-    <h3>Crear Nuevo Cupón</h3>
-
-    <div class="form-group">
-      <label>Código del Cupón:</label>
-      <input type="text" formControlName="codigo" placeholder="Ej. VERANO2026">
-    </div>
-
+  <form [formGroup]="nuevoForm" (ngSubmit)="crear()" class="admin-form">
+    <h3>Nuevo cupón</h3>
     <div class="form-row">
       <div class="form-group">
-        <label>Porcentaje de Descuento (%):</label>
-        <input type="number" formControlName="porcentaje_descuento" min="1" max="100">
+        <label for="codigo">Código</label>
+        <input id="codigo" type="text" formControlName="codigo" placeholder="Ej. JUBILADOS30" autocapitalize="characters">
+        @if (nuevoForm.controls.codigo.hasError('pattern')) { <span class="form-error">Solo letras, números, - y _.</span> }
       </div>
-
-      <div class="form-group checkbox-group">
-        <label>
-          <input type="checkbox" formControlName="solo_mayores_50">
-          Exclusivo para mayores de 50 años
-        </label>
+      <div class="form-group">
+        <label for="porc">Descuento (%)</label>
+        <input id="porc" type="number" formControlName="porcentaje_descuento" min="1" max="100">
       </div>
     </div>
-
-    <button type="submit" class="admin-btn" [disabled]="cargando()">
-      {{ cargando() ? 'Guardando...' : 'Crear Cupón' }}
-    </button>
+    <label class="checkbox-label">
+      <input type="checkbox" formControlName="solo_mayores_50"> Exclusivo para mayores de 50 años
+    </label>
+    <button type="submit" [disabled]="cargando()">{{ cargando() ? 'Guardando…' : 'Crear cupón' }}</button>
   </form>
 
-  @if (mensajeExito()) {
-    <div class="alert success">{{ mensajeExito() }}</div>
-  }
-  @if (mensajeError()) {
-    <div class="alert error">{{ mensajeError() }}</div>
-  }
+  @if (mensajeExito()) { <div class="alert success">{{ mensajeExito() }}</div> }
+  @if (mensajeError()) { <div class="alert error">{{ mensajeError() }}</div> }
 
-  <div class="listado-seccion" style="margin-top: 3rem;">
-    <h3>Cupones Existentes</h3>
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Descuento</th>
-          <th>Restricción</th>
-          <th>Estado</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (c of cupones(); track c.id) {
-          <tr>
-            <td><strong>{{ c.codigo }}</strong></td>
-            <td>{{ c.porcentaje_descuento }}%</td>
-            <td>{{ c.solo_mayores_50 ? 'Mayores de 50' : 'General' }}</td>
-            <td>
-              <span class="badge" [class.activo]="c.activo" [class.inactivo]="!c.activo">
-                {{ c.activo ? 'Activo' : 'Inactivo' }}
-              </span>
-            </td>
-            <td>
-              <button class="btn-toggle" (click)="toggleEstadoCupon(c)">
-                {{ c.activo ? 'Desactivar' : 'Activar' }}
-              </button>
-            </td>
-          </tr>
-        } @empty {
-          <tr><td colspan="5" class="empty">No hay cupones registrados.</td></tr>
-        }
-      </tbody>
-    </table>
+  <div class="listado-seccion">
+    <h3>Cupones registrados</h3>
+    <div class="admin-table-wrap">
+      <table class="admin-table" [formGroup]="edicionForm">
+        <thead><tr><th>Código</th><th>Descuento</th><th>Restricción</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          @for (c of cupones(); track c.id) {
+            @if (editandoId() === c.id) {
+              <tr class="fila-editando">
+                <td><input type="text" formControlName="codigo" aria-label="Código"></td>
+                <td><input type="number" formControlName="porcentaje_descuento" min="1" max="100" aria-label="Porcentaje"></td>
+                <td><label class="checkbox-label"><input type="checkbox" formControlName="solo_mayores_50"> Solo +50</label></td>
+                <td><label class="checkbox-label"><input type="checkbox" formControlName="activo"> Activo</label></td>
+                <td class="acciones">
+                  <button type="button" class="btn-toggle" (click)="guardar(c)">Guardar</button>
+                  <button type="button" class="btn-toggle" (click)="cancelar()">Cancelar</button>
+                </td>
+              </tr>
+            } @else {
+              <tr>
+                <td><strong>{{ c.codigo }}</strong>@if (c.codigo === CODIGO_BIENVENIDA) { <br><small>Primera compra</small> }</td>
+                <td>{{ c.porcentaje_descuento }}%</td>
+                <td>{{ c.solo_mayores_50 ? 'Mayores de 50' : 'General' }}</td>
+                <td><span class="badge" [class.activo]="c.activo" [class.inactivo]="!c.activo">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                <td class="acciones">
+                  <button type="button" class="btn-toggle" (click)="editar(c)" [disabled]="editandoId() !== null">Editar</button>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr><td colspan="5" class="empty">No hay cupones.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>

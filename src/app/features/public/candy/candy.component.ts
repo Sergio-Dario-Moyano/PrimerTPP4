@@ -1,5 +1,5 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { DecimalPipe, DatePipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { ResumenCompraComponent } from '../../../shared/components/resumen-compra/resumen-compra.component';
@@ -10,177 +10,207 @@ import { Pelicula } from '../../../core/models/Pelicula.model';
 import { ButacaReservada } from '../../../core/models/ButacaReservada.model';
 import { RawPelicula } from '../../../core/models/RawPelicula.model';
 import { RawComboCandy } from '../../../core/models/RawComboCandy.model';
+import { RawProductoCandy } from '../../../core/models/RawProductoCandy.model';
 import { ProductoCandy } from '../../../core/models/ProductoCandy.model';
+import { ComboReservado } from '../../../core/models/ComboReservado.model';
+import {
+  resumirEntradasPorTipo, montoEntradasCubiertas, CARGO_SERVICIO_ENTRADAS, CARGO_SERVICIO_CANDY
+} from '../../../core/utils/precios';
 
+interface Categoria { id: number; nombre: string; }
+
+const IMAGEN_DEFECTO = 'https://placehold.co/400x300/1e1e1e/f5b301?text=Candy';
+
+/**
+ * Candy bar (mail 30/01 y 03/03): combos destacados (algunos incluyen la entrada)
+ * y productos sueltos por categoría. Todo se retira con el mismo QR de la entrada.
+ */
 @Component({
   selector: 'app-candy',
   standalone: true,
-  imports: [DecimalPipe, DatePipe, ResumenCompraComponent],
+  imports: [DecimalPipe, DatePipe, NgTemplateOutlet, ResumenCompraComponent],
   templateUrl: './candy.component.html',
   styleUrl: './candy.component.css'
 })
 export class CandyComponent implements OnInit {
-
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private supabaseService = inject(SupabaseService);
+  private supabase = inject(SupabaseService).client;
   private reservaService = inject(ReservaService);
   private peliculaService = inject(PeliculaService);
+
+  readonly IMAGEN_DEFECTO = IMAGEN_DEFECTO;
 
   pelicula = signal<Pelicula | null>(null);
   horarioSeleccionado = signal<string>('');
   salaSeleccionada = signal<string>('');
   butacasReservadas = signal<ButacaReservada[]>([]);
-  carrito = signal<Record<string, number>>({});
-  productos = signal<ProductoCandy[]>([]);
 
-  totalCarrito = computed(() => {
-    const items = this.carrito();
-    let total = 0;
-    for (const [id, cantidad] of Object.entries(items)) {
-      const producto = this.productos().find(p => p.id === id);
-      if (producto) total += producto.precio * cantidad;
-    }
-    return total;
+  combos = signal<ProductoCandy[]>([]);
+  productos = signal<ProductoCandy[]>([]);
+  categorias = signal<Categoria[]>([]);
+  categoriaSeleccionada = signal<number | null>(null);
+
+  /** Carrito: clave "combo:<id>" o "producto:<id>" → cantidad. */
+  carrito = signal<Record<string, number>>({});
+
+  /** Pestaña "Candy Bar" sola (sin película): /candy */
+  soloCandy = signal<boolean>(false);
+
+  /** En modo solo candy no se ofrecen los combos que incluyen entrada. */
+  combosVisibles = computed(() =>
+    this.soloCandy() ? this.combos().filter(c => !c.incluyeEntrada) : this.combos());
+
+  productosFiltrados = computed(() => {
+    const cat = this.categoriaSeleccionada();
+    return cat == null ? this.productos() : this.productos().filter(p => p.categoriaId === cat);
   });
 
-  resumenCandy = computed(() => {
-    const items = this.carrito();
-    const resumen = [];
-    for (const [id, cantidad] of Object.entries(items)) {
-      const producto = this.productos().find(p => p.id === id);
-      if (producto) {
-        resumen.push({
-          cantidad: cantidad,
-          nombre: producto.nombre,
-          precioTotal: producto.precio * cantidad,
-          imagenUrl: producto.imagenUrl
-        });
-      }
-    }
-    return resumen;
+  private todos = computed(() => [...this.combos(), ...this.productos()]);
+
+  itemsCarrito = computed<ComboReservado[]>(() =>
+    Object.entries(this.carrito()).flatMap(([clave, cantidad]) => {
+      const item = this.todos().find(p => this.clave(p) === clave);
+      return item ? [{
+        id: item.id, tipo: item.tipo, nombre: item.nombre, cantidad,
+        precioUnitario: item.precio, incluyeEntrada: item.incluyeEntrada
+      }] : [];
+    })
+  );
+
+  resumenCandy = computed(() =>
+    this.itemsCarrito().map(i => ({ cantidad: i.cantidad, nombre: i.nombre, precioTotal: i.precioUnitario * i.cantidad })));
+
+  /** Cuántas entradas quedan cubiertas por combos con entrada incluida. */
+  entradasEnCombos = computed(() =>
+    this.itemsCarrito().filter(i => i.incluyeEntrada).reduce((acc, i) => acc + i.cantidad, 0));
+
+  descuentos = computed(() => {
+    const monto = montoEntradasCubiertas(this.butacasReservadas(), this.entradasEnCombos(), this.reservaService.precioBase());
+    return monto > 0 ? [{ concepto: `Entrada incluida en combo (${this.entradasEnCombos()})`, monto }] : [];
   });
 
   nombresButacas = computed(() => this.butacasReservadas().map(b => `${b.fila}${b.columna}`));
-
-  resumenEntradas = computed(() => {
-    const cantidad = this.butacasReservadas().length;
-    if (cantidad === 0) return [];
-    return [{
-      cantidad: cantidad,
-      tipo: 'Entrada General',
-      precioTotal: cantidad * 5000
-    }];
-  });
-
-  cargoServicioEntradas = computed(() => this.butacasReservadas().length > 0 ? 1050 : 0);
-  cargoServicioCandy = computed(() => Object.keys(this.carrito()).length > 0 ? 900 : 0);
+  resumenEntradas = computed(() => resumirEntradasPorTipo(this.butacasReservadas()));
+  cargoServicioEntradas = computed(() => this.butacasReservadas().length > 0 ? CARGO_SERVICIO_ENTRADAS : 0);
+  cargoServicioCandy = computed(() => this.itemsCarrito().length > 0 ? CARGO_SERVICIO_CANDY : 0);
 
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) this.cargarPelicula(id);
-    });
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.cargarPelicula(id);
+      this.reservaService.soloCandy.set(false);
+    } else {
+      // Compra solo de candy: si venía de otro flujo, se descartan butacas y función
+      if (!this.reservaService.soloCandy()) this.reservaService.limpiarReserva();
+      this.reservaService.soloCandy.set(true);
+      this.soloCandy.set(true);
+    }
 
-    this.route.queryParamMap.subscribe(params => {
-      const horario = params.get('horario');
-      const sala = params.get('sala');
-      if (horario) this.horarioSeleccionado.set(horario);
-      if (sala) this.salaSeleccionada.set(sala);
-    });
+    const params = this.route.snapshot.queryParamMap;
+    this.horarioSeleccionado.set(params.get('horario') ?? '');
+    this.salaSeleccionada.set(params.get('sala') ?? '');
 
     this.butacasReservadas.set(this.reservaService.butacas());
+
+    // Si vuelve atrás desde el checkout, recuperamos lo que ya había elegido
+    const previos: Record<string, number> = {};
+    for (const c of this.reservaService.combos()) previos[`${c.tipo}:${c.id}`] = c.cantidad;
+    this.carrito.set(previos);
+
     this.cargarCandy();
+  }
+
+  clave(p: ProductoCandy): string {
+    return `${p.tipo}:${p.id}`;
   }
 
   async cargarPelicula(id: string): Promise<void> {
     try {
       const data: RawPelicula = await this.peliculaService.getPeliculaById(id);
-
-      const generosMapeados = data.pelicula_genero && data.pelicula_genero.length > 0
-        ? data.pelicula_genero.map((rel: any) => rel.generos?.nombre || 'Sin género')
-        : ['Sin género'];
-
-      const clasificacion = data.restriccion_edad === 0 ? 'ATP' : `+${data.restriccion_edad}`;
-
       this.pelicula.set({
         id: String(data.id),
         titulo: data.titulo,
         sinopsis: data.sinopsis,
         duracion: Number(data.duracion_minutos),
         poster_url: data.url_imagen,
-        clasificacion: clasificacion,
-        generos: generosMapeados,
-        formatos: ['2D', '3D'],
-        idiomas: ['Castellano'],
+        clasificacion: data.restriccion_edad ? `+${data.restriccion_edad}` : 'ATP',
+        generos: (data.pelicula_genero ?? []).map(r => r.generos?.nombre),
+        formatos: [],
+        idiomas: [],
         hero_imagen: data.hero_imagen
       });
-
     } catch (error) {
       console.error('Error cargando película:', error);
     }
   }
 
   async cargarCandy(): Promise<void> {
-    try {
-      const supabase = this.supabaseService.client;
-      const { data, error } = await supabase
-        .from('combos_candy')
-        .select('*')
-        .eq('activo', true);
+    const [combosRes, productosRes, categoriasRes] = await Promise.all([
+      this.supabase.from('combos_candy').select('*').eq('activo', true),
+      this.supabase.from('productos_candy').select('*').eq('activo', true).order('nombre'),
+      this.supabase.from('categorias_candy').select('id, nombre').order('nombre')
+    ]);
 
-      if (error) throw error;
+    const combos = ((combosRes.data ?? []) as RawComboCandy[]).map(c => ({
+      id: String(c.id),
+      tipo: 'combo' as const,
+      nombre: c.nombre,
+      descripcion: c.descripcion ?? '',
+      precio: Number(c.precio),
+      imagenUrl: c.imagen_url || IMAGEN_DEFECTO,
+      enOferta: !!c.en_oferta,
+      incluyeEntrada: !!c.incluye_entrada,
+      categoriaId: null
+    }));
+    // Destacados primero: los que incluyen entrada y los marcados en oferta
+    combos.sort((a, b) => Number(b.incluyeEntrada) - Number(a.incluyeEntrada) || Number(b.enOferta) - Number(a.enOferta));
+    this.combos.set(combos);
 
-      if (data) {
-        const productosDB: ProductoCandy[] = data.map((item: RawComboCandy) => ({
-          id: String(item.id),
-          nombre: item.nombre,
-          descripcion: item.descripcion,
-          precio: Number(item.precio),
-          precioSinImpuestos: Math.round(Number(item.precio) / 1.21),
-          // 💡 Manejo de URL nula por si el seed de la BD no tiene imagen
-          imagenUrl: item.imagen_url || 'https://via.placeholder.com/400x300/cbd4df/64748b?text=Combo',
-          enOferta: item.en_oferta || false
-        }));
-        this.productos.set(productosDB);
-      }
-    } catch (error) {
-      console.error('Error cargando el candy:', error);
-    }
+    this.productos.set(((productosRes.data ?? []) as RawProductoCandy[]).map(p => ({
+      id: String(p.id),
+      tipo: 'producto' as const,
+      nombre: p.nombre,
+      descripcion: '',
+      precio: Number(p.precio),
+      imagenUrl: p.url_imagen || IMAGEN_DEFECTO,
+      enOferta: false,
+      incluyeEntrada: false,
+      categoriaId: p.categoria_id
+    })));
+
+    // Solo mostramos categorías que tengan productos
+    const conProductos = new Set(this.productos().map(p => p.categoriaId));
+    this.categorias.set((categoriasRes.data ?? []).filter(c => conProductos.has(c.id)));
   }
 
-  getCantidad(id: string): number {
-    return this.carrito()[id] || 0;
+  getCantidad(p: ProductoCandy): number {
+    return this.carrito()[this.clave(p)] || 0;
   }
 
-  incrementar(id: string): void {
-    this.carrito.update(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  /** No se pueden pedir más combos con entrada que butacas elegidas. */
+  puedeAgregar(p: ProductoCandy): boolean {
+    return !p.incluyeEntrada || this.entradasEnCombos() < this.butacasReservadas().length;
   }
 
-  decrementar(id: string): void {
+  incrementar(p: ProductoCandy): void {
+    if (!this.puedeAgregar(p)) return;
+    const k = this.clave(p);
+    this.carrito.update(prev => ({ ...prev, [k]: (prev[k] || 0) + 1 }));
+  }
+
+  decrementar(p: ProductoCandy): void {
+    const k = this.clave(p);
     this.carrito.update(prev => {
-      const actual = prev[id] || 0;
-      if (actual <= 1) {
-        const nuevoCarrito = { ...prev };
-        delete nuevoCarrito[id];
-        return nuevoCarrito;
-      }
-      return { ...prev, [id]: actual - 1 };
+      const nuevo = { ...prev };
+      if ((nuevo[k] || 0) <= 1) delete nuevo[k];
+      else nuevo[k]--;
+      return nuevo;
     });
   }
 
   irAlPago(): void {
-    const combosParaServicio = Object.entries(this.carrito()).map(([id, cantidad]) => {
-      const producto = this.productos().find(p => p.id === id);
-      return {
-        id: id,
-        nombre: producto?.nombre || '',
-        cantidad: cantidad,
-        precioUnitario: producto?.precio || 0
-      };
-    });
-
-    this.reservaService.combos.set(combosParaServicio);
+    this.reservaService.combos.set(this.itemsCarrito());
     this.router.navigate(['/checkout']);
   }
 }

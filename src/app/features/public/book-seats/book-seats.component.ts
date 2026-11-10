@@ -18,7 +18,8 @@ import { RawButaca } from '../../../core/models/RawButaca.model';
 import { RawEntrada } from '../../../core/models/RawEntrada.model';
 import { RawPelicula } from '../../../core/models/RawPelicula.model';
 import { Cell } from '../../../core/models/Cell.model';
-import { Seat } from '../../../core/models/Seat.model';
+import { Seat, SeatType } from '../../../core/models/Seat.model';
+import { precioBaseVigente, precioButaca, resumirEntradasPorTipo, enPreventa, CARGO_SERVICIO_ENTRADAS, RECARGO_VIP } from '../../../core/utils/precios';
 
 @Component({
   selector: 'app-book-seats',
@@ -37,11 +38,19 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   private router = inject(Router);
 
   readonly ROWS = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T"];
-  readonly VIP_ROWS = ["R","S","T"];
   readonly TOTAL_COLS = 30;
+  // Reglas del cliente (mails 12/02 y 10/03): la fila J es la fila accesible,
+  // la fila K queda vacía como separación y R, S y T son VIP.
+  readonly FILA_ACCESIBLE = 'J';
+  readonly FILA_SEPARADOR = 'K';
+  readonly VIP_ROWS = ['R', 'S', 'T'];
   private grillaEnProceso: boolean = false;
 
   pelicula = signal<Pelicula | null>(null);
+  precioBase = signal<number>(0);
+  esPreventa = signal<boolean>(false);
+  /** Recargo VIP configurable (tabla configuracion, en fracción: 0.5 = 50 %). */
+  recargoVip = signal<number>(RECARGO_VIP);
 
   horarioUI = signal<string>('');
   salaUI = signal<string>('');
@@ -62,17 +71,15 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   total = computed(() => this.selected().reduce((sum, s) => sum + s.price, 0));
   nombresButacas = computed(() => this.selected().map(s => s.codigo));
 
-  resumenEntradas = computed(() => {
-    const seleccionadas = this.selected();
-    if (seleccionadas.length === 0) return [];
-    return [{
-      cantidad: seleccionadas.length,
-      tipo: 'Entrada General',
-      precioTotal: this.total()
-    }];
-  });
+  // Agrupado por tipo: el usuario ve claramente si está pagando una butaca VIP
+  resumenEntradas = computed(() =>
+    resumirEntradasPorTipo(this.selected().map(s => ({ tipo: s.type, precio: s.price })))
+  );
 
-  cargoServicio = computed(() => this.selected().length > 0 ? 1.99 : 0);
+  cantidadVipSeleccionadas = computed(() => this.selected().filter(s => s.type === 'vip').length);
+  precioVip = computed(() => precioButaca(this.precioBase(), 'vip', this.recargoVip()));
+
+  cargoServicio = computed(() => this.selected().length > 0 ? CARGO_SERVICIO_ENTRADAS : 0);
 
   rowGroups = computed(() => {
     const currentSeats = this.seats();
@@ -85,8 +92,8 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
           continue;
         }
 
-        // Fila I queda completamente vacía para separar la zona accesible (Fila J) - REGLA APLICADA
-        if (row === 'I') {
+        // Fila K: se dibuja vacía para separar la zona accesible del resto
+        if (row === this.FILA_SEPARADOR) {
           cells.push({ type: 'empty' });
           continue;
         }
@@ -167,18 +174,23 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
       if (butacasDB) {
         for (const b of butacasDB as RawButaca[]) {
-          const codigo = `${b.fila}${b.columna}`;
-          const isVip = this.VIP_ROWS.includes(b.fila);
-          const isAccessible = b.fila === 'J';
+          // Las celdas marcadas como 'vacia' en la BD no son butacas reales
+          if (b.tipo === 'vacia') continue;
+
+          // Tipo de butaca: se respeta butacas.tipo si viene cargado en la BD y,
+          // si no (todas quedaron 'estandar' por defecto), se aplica la regla por fila.
+          const esVip = b.tipo === 'vip' || this.VIP_ROWS.includes(b.fila);
+          const esAccesible = b.tipo === 'accesible' || b.fila === this.FILA_ACCESIBLE;
+          const type: SeatType = esVip ? 'vip' : esAccesible ? 'accessible' : 'standard';
 
           allSeats.push({
             id: b.id,
-            codigo: codigo,
+            codigo: `${b.fila}${b.columna}`,
             row: b.fila,
             num: Number(b.columna),
-            type: isAccessible ? "accessible" : isVip ? "vip" : "standard",
+            type,
             status: asientosOcupados.includes(b.id) ? "occupied" : "free",
-            price: isVip ? 7000 : 5000
+            price: precioButaca(this.precioBase(), type, this.recargoVip())
           });
         }
       }
@@ -196,6 +208,12 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   async cargarPelicula(id: string): Promise<void> {
     try {
       const data = await this.peliculaService.getPeliculaById(id) as RawPelicula;
+      this.precioBase.set(precioBaseVigente(data));
+
+      const { data: config } = await this.supabaseService.client
+        .from('configuracion').select('valor').eq('clave', 'recargo_vip_porcentaje').maybeSingle();
+      if (config) this.recargoVip.set(Number(config.valor) / 100);
+      this.esPreventa.set(enPreventa(data));
 
       this.pelicula.set({
         id: String(data.id),
@@ -257,14 +275,14 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   cerrarModalEdad(redireccionar: boolean = false): void {
     this.modalEdadAbierto.set(false);
     if (redireccionar) {
-      this.router.navigate(['/cartelera']);
+      this.router.navigate(['/home']);
     }
   }
 
   private suscribirAsientosEnTiempoReal(): void {
     const supabase = this.supabaseService.client;
 
-    this.realtimeChannel = supabase.channel('sala-asientos')
+    this.realtimeChannel = supabase.channel(`sala-asientos-${this.funcionIdReal()}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'entradas' },
@@ -325,7 +343,7 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
         .from('entradas')
         .select('butaca_id')
         .eq('funcion_id', this.funcionIdReal())
-        .in('estado', ['validada', 'pendiente'])
+        .neq('estado', 'cancelada')
         .in('butaca_id', butacasDeseadasIds);
 
       // REEMPLAZO DE ALERT POR MODAL GLOBAL
@@ -342,10 +360,13 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
       const butacasParaServicio = seleccionadas.map(s => ({
         fila: s.row,
         columna: s.num,
-        id: s.id
+        id: s.id,
+        tipo: s.type,
+        precio: s.price
       }));
 
       this.reservaService.establecerButacas(butacasParaServicio);
+      this.reservaService.precioBase.set(this.precioBase());
       this.reservaService.establecerFuncion(this.funcionIdReal()!);
 
       this.router.navigate(['/confiteria', this.peliculaId()], {

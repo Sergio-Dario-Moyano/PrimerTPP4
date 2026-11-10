@@ -1,0 +1,167 @@
+<div class="admin-container">
+  <h2>Candy Bar y Combos</h2>
+  <p class="admin-sub">Todo lo que se cargue acá aparece en el paso de candy de la compra y se retira con el QR de la entrada.</p>
+
+  <div class="generos-grid" role="tablist" style="margin-bottom: 1.25rem;">
+    <button type="button" class="genero-chip" [class.selected]="pestania() === 'productos'" (click)="cambiarPestania('productos')">Productos ({{ productos().length }})</button>
+    <button type="button" class="genero-chip" [class.selected]="pestania() === 'combos'" (click)="cambiarPestania('combos')">Combos ({{ combos().length }})</button>
+    <button type="button" class="genero-chip" [class.selected]="pestania() === 'categorias'" (click)="cambiarPestania('categorias')">Categorías ({{ categorias().length }})</button>
+  </div>
+
+  @if (mensajeExito()) { <div class="alert success">{{ mensajeExito() }}</div> }
+  @if (mensajeError()) { <div class="alert error">{{ mensajeError() }}</div> }
+
+  @switch (pestania()) {
+    @case ('productos') {
+      <form [formGroup]="productoForm" (ngSubmit)="guardarProducto()" class="admin-form">
+        <h3>{{ productoEditando() ? 'Editando: ' + productoEditando()!.nombre : 'Nuevo producto' }}</h3>
+        <div class="form-row form-row--imagenes">
+          <app-image-dropzone formControlName="url_imagen" etiqueta="Imagen" carpeta="candy" formato="cuadrado" />
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label for="p-nombre">Nombre</label>
+              <input id="p-nombre" type="text" formControlName="nombre" placeholder="Ej. Pochoclo grande">
+            </div>
+            <div class="form-group">
+              <label for="p-cat">Categoría</label>
+              <select id="p-cat" formControlName="categoria_id">
+                <option [ngValue]="null" disabled>Elegí una categoría…</option>
+                @for (c of categorias(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="p-precio">Precio ($)</label>
+                <input id="p-precio" type="number" formControlName="precio">
+              </div>
+              <div class="form-group">
+                <label for="p-puntos">Costo en puntos (canje)</label>
+                <input id="p-puntos" type="number" formControlName="costo_puntos">
+                <span class="form-ayuda">0 = no se puede canjear</span>
+              </div>
+            </div>
+            <label class="checkbox-label"><input type="checkbox" formControlName="activo"> Disponible para la venta</label>
+          </div>
+        </div>
+        <div class="admin-form__acciones">
+          <button type="submit" [disabled]="guardando()">{{ productoEditando() ? 'Guardar cambios' : 'Crear producto' }}</button>
+          @if (productoEditando()) { <button type="button" class="admin-btn admin-btn--secundario" (click)="cancelarProducto()">Cancelar</button> }
+        </div>
+      </form>
+
+      <div class="listado-seccion">
+        <h3>Productos</h3>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th></th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Puntos</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              @for (p of productos(); track p.id) {
+                <tr [class.fila-editando]="productoEditando()?.id === p.id">
+                  <td><img class="miniatura miniatura--cuadrada" [src]="p.url_imagen" [alt]="p.nombre"></td>
+                  <td><strong>{{ p.nombre }}</strong></td>
+                  <td>{{ nombreCategoria()(p.categoria_id) }}</td>
+                  <td>{{ p.precio | currency:'ARS':'$':'1.0-0' }}</td>
+                  <td>{{ p.costo_puntos || '—' }}</td>
+                  <td><span class="badge" [class.activo]="p.activo" [class.inactivo]="!p.activo">{{ p.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                  <td class="acciones">
+                    <button type="button" class="btn-toggle" (click)="editarProducto(p)">Editar</button>
+                    <button type="button" class="btn-toggle" (click)="toggleProducto(p)">{{ p.activo ? 'Desactivar' : 'Activar' }}</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="empty">No hay productos cargados.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    @case ('combos') {
+      <form [formGroup]="comboForm" (ngSubmit)="guardarCombo()" class="admin-form">
+        <h3>{{ comboEditando() ? 'Editando: ' + comboEditando()!.nombre : 'Nuevo combo' }}</h3>
+        <div class="form-row form-row--imagenes">
+          <app-image-dropzone formControlName="imagen_url" etiqueta="Imagen" carpeta="combos" formato="cuadrado" />
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label for="c-nombre">Nombre</label>
+              <input id="c-nombre" type="text" formControlName="nombre" placeholder="Ej. Combo Película: entrada + pochoclo + gaseosa">
+            </div>
+            <div class="form-group">
+              <label for="c-desc">Qué incluye</label>
+              <textarea id="c-desc" formControlName="descripcion" placeholder="1 entrada general, pochoclo grande y gaseosa 500 ml"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="c-precio">Precio fijo ($)</label>
+              <input id="c-precio" type="number" formControlName="precio">
+            </div>
+            <label class="checkbox-label"><input type="checkbox" formControlName="incluye_entrada"> Incluye una entrada (cubre el precio de 1 entrada general)</label>
+            <label class="checkbox-label"><input type="checkbox" formControlName="en_oferta"> Destacado / en oferta</label>
+            <label class="checkbox-label"><input type="checkbox" formControlName="activo"> Disponible para la venta</label>
+          </div>
+        </div>
+        <div class="admin-form__acciones">
+          <button type="submit" [disabled]="guardando()">{{ comboEditando() ? 'Guardar cambios' : 'Crear combo' }}</button>
+          @if (comboEditando()) { <button type="button" class="admin-btn admin-btn--secundario" (click)="cancelarCombo()">Cancelar</button> }
+        </div>
+      </form>
+
+      <div class="listado-seccion">
+        <h3>Combos</h3>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Combo</th><th>Precio</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              @for (c of combos(); track c.id) {
+                <tr [class.fila-editando]="comboEditando()?.id === c.id">
+                  <td><strong>{{ c.nombre }}</strong><br><small>{{ c.descripcion }}</small></td>
+                  <td>{{ c.precio | currency:'ARS':'$':'1.0-0' }}</td>
+                  <td>
+                    @if (c.incluye_entrada) { <span class="badge preventa">Con entrada</span> }
+                    @if (c.en_oferta) { <span class="badge proximamente">Destacado</span> }
+                  </td>
+                  <td><span class="badge" [class.activo]="c.activo" [class.inactivo]="!c.activo">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                  <td class="acciones">
+                    <button type="button" class="btn-toggle" (click)="editarCombo(c)">Editar</button>
+                    <button type="button" class="btn-toggle" (click)="toggleCombo(c)">{{ c.activo ? 'Desactivar' : 'Activar' }}</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="empty">No hay combos cargados.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    @case ('categorias') {
+      <form [formGroup]="categoriaForm" (ngSubmit)="crearCategoria()" class="admin-form">
+        <h3>Nueva categoría</h3>
+        <div class="form-group">
+          <label for="cat-nombre">Nombre</label>
+          <input id="cat-nombre" type="text" formControlName="nombre" placeholder="Ej. Helados">
+        </div>
+        <button type="submit">Crear categoría</button>
+      </form>
+
+      <div class="listado-seccion">
+        <h3>Categorías</h3>
+        <table class="admin-table">
+          <thead><tr><th>Categoría</th><th>Productos</th><th></th></tr></thead>
+          <tbody>
+            @for (c of categorias(); track c.id) {
+              <tr>
+                <td><strong>{{ c.nombre }}</strong></td>
+                <td>{{ cantidadProductos(c.id) }}</td>
+                <td><button type="button" class="btn-toggle btn-toggle--peligro" (click)="eliminarCategoria(c)" [disabled]="cantidadProductos(c.id) > 0">Eliminar</button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="empty">No hay categorías.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>

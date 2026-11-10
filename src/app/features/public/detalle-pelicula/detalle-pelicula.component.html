@@ -47,10 +47,21 @@
     <div class="l-container detalle-cuerpo">
 
       <!-- Detalle de los horarios -->
-      <app-funciones-pelicula
-        [funciones]="funciones()"
-        (onSeleccionar)="navegarASala($event)">
-      </app-funciones-pelicula>
+      @if (ventaAbierta()) {
+        @if (esPreventa()) {
+          <p class="aviso-preventa">🎟️ <strong>Preventa abierta:</strong> comprá ahora con precio especial.</p>
+        }
+        <app-funciones-pelicula
+          [funciones]="funciones()"
+          (onSeleccionar)="navegarASala($event)">
+        </app-funciones-pelicula>
+      } @else {
+        <p class="aviso-preventa aviso-preventa--cerrada">
+          🔜 Las entradas salen a la venta
+          @if (aperturaVenta()) { el {{ aperturaVenta() | date:"EEEE d 'de' MMMM" }} } @else { próximamente }.
+          Activá la alerta en <a routerLink="/proximamente">Próximamente</a> y te avisamos.
+        </p>
+      }
 
       <!-- Sistema de Reseñas -->
       <section class="seccion-resenas">

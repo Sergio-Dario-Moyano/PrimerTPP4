@@ -23,7 +23,7 @@ export class FuncionesPeliculaComponent {
       if (dias.length > 0 && (!this.fechaSeleccionada() || !dias.some(d => d.key === this.fechaSeleccionada()))) {
         this.fechaSeleccionada.set(dias[0].key);
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   // Helper privado para limpiar las fechas
@@ -31,6 +31,17 @@ export class FuncionesPeliculaComponent {
     const fechaLimpiada = fechaIso.includes('T') ? fechaIso : fechaIso.replace(' ', 'T');
     return new Date(fechaLimpiada);
   }
+
+    // Clave del día en hora LOCAL (YYYY-MM-DD). Antes se usaba toISOString(), que está en UTC:
+    // una función a las 22:00 en Argentina caía en el día siguiente.
+  private claveDia(fecha: Date): string {
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, '0');
+    const d = String(fecha.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+
 
   // 💡 Filtrar días para mostrar únicamente los que tengan funciones futuras
   diasDisponibles = computed(() => {
@@ -42,7 +53,7 @@ export class FuncionesPeliculaComponent {
 
       // Solo incluimos la fecha si la función aún no ha pasado
       if (fechaObj >= ahora) {
-        const key = fechaObj.toISOString().split('T')[0];
+        const key = this.claveDia(fechaObj);
 
         if (!mapDias.has(key)) {
           const diaSemana = fechaObj.toLocaleDateString('es-AR', { weekday: 'short' }).toUpperCase();
@@ -68,7 +79,7 @@ export class FuncionesPeliculaComponent {
     const filtradas = !sel
       ? funcionesFuturas
       : funcionesFuturas.filter(f => {
-          const key = this.parseFecha(f.fecha_hora).toISOString().split('T')[0];
+          const key = this.claveDia(this.parseFecha(f.fecha_hora));
           return key === sel;
         });
 

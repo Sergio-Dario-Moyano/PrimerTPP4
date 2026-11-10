@@ -4,34 +4,32 @@
   @if (cargandoHistorial()) {
     <div class="historial-canjes__status">
       <div class="pulse-dot pulse-dot-loading"></div>
-      <p>Cargando tu historial de beneficios...</p>
+      <p>Cargando tu historial…</p>
     </div>
   } @else if (error()) {
-    <div class="historial-canjes__status historial-canjes__status--error">
-      <p>{{ error() }}</p>
-    </div>
+    <div class="historial-canjes__status historial-canjes__status--error"><p>{{ error() }}</p></div>
   } @else if (canjes().length > 0) {
     <div class="historial-canjes__list">
       @for (canje of canjes(); track canje.id) {
         <div class="canje-card">
           <div class="canje-card__info">
-            <span class="canje-card__codigo">Cupón: {{ canje.cupon?.codigo || 'DESC' }}</span>
-            <span class="canje-card__descuento">{{ canje.cupon?.porcentaje_descuento }}% OFF aplicado</span>
-            <span class="canje-card__fecha">📅 {{ canje.fecha_compra | date:'dd/MM/yyyy' }}</span>
+            <span class="canje-card__codigo">{{ canje.tipo === 'entrada' ? '🎟️' : '🍿' }} {{ canje.descripcion }}</span>
+            <span class="canje-card__descuento">{{ canje.tipo === 'entrada' ? 'Entrada gratis para tu próxima compra' : 'Retiro en el Candy Bar' }}</span>
+            <span class="canje-card__fecha">📅 {{ canje.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+            @if (canje.compra_id) {
+              <a class="canje-card__link" [routerLink]="['/ticket', canje.compra_id]">Ver QR ({{ canje.compras?.codigo_ticket }})</a>
+            }
           </div>
           <div class="canje-card__total">
-            <span>Total pagado</span>
-            <strong>$ {{ canje.total_pagado | number:'1.0-0' }}</strong>
+            <span>Puntos</span>
+            <strong>- {{ canje.puntos | number:'1.0-0' }}</strong>
           </div>
         </div>
       }
     </div>
   } @else {
     <div class="historial-canjes__empty">
-      <p>
-        Aún no has utilizado ningún cupón de descuento en tus compras. <br>
-        ¡Canjeá tu beneficio en tu próxima visita al cine!
-      </p>
+      <p>Todavía no canjeaste puntos.<br>Mirá las recompensas en <a routerLink="/perfil/puntos">Puntos y Beneficios</a>.</p>
     </div>
   }
 </section>

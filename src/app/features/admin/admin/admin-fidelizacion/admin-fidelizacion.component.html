@@ -1,0 +1,47 @@
+<div class="admin-container">
+  <h2>Puntos y Canjes</h2>
+  <p class="admin-sub">
+    Los clientes registrados suman 1 punto por cada $1 pagado.
+    Hasta hoy se hicieron {{ canjesTotales() }} canjes por {{ puntosCanjeados() | number:'1.0-0' }} puntos.
+  </p>
+
+  <div class="admin-form">
+    <h3>Recompensas y precios</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="pe">Puntos para canjear 1 entrada gratis</label>
+        <input id="pe" type="number" min="1" [ngModel]="puntosEntrada()" (ngModelChange)="puntosEntrada.set(+$event)">
+      </div>
+      <div class="form-group">
+        <label for="vip">Recargo de butacas VIP (%)</label>
+        <input id="vip" type="number" min="0" [ngModel]="recargoVip()" (ngModelChange)="recargoVip.set(+$event)">
+        <span class="form-ayuda">Sobre el precio de la película. Ej.: 50 → una entrada de $5.000 cuesta $7.500 en VIP.</span>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 0.5rem;">Productos del candy canjeables</h3>
+    <span class="form-ayuda">Poné 0 para que un producto no se pueda canjear.</span>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Producto</th><th>Costo en puntos</th></tr></thead>
+        <tbody>
+          @for (p of productos(); track p.id) {
+            <tr>
+              <td>{{ p.nombre }} @if (!p.activo) { <small>(inactivo)</small> }</td>
+              <td style="max-width: 140px;">
+                <input type="number" min="0" [ngModel]="p.costo_puntos" (ngModelChange)="actualizarCostoProducto(p.id, $event)" [attr.aria-label]="'Puntos de ' + p.nombre">
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="2" class="empty">Cargá productos en "Candy Bar y Combos".</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <button type="button" class="admin-btn" (click)="guardar()">Guardar configuración</button>
+  </div>
+
+  @if (mensajeExito()) { <div class="alert success">{{ mensajeExito() }}</div> }
+  @if (mensajeError()) { <div class="alert error">{{ mensajeError() }}</div> }
+</div>

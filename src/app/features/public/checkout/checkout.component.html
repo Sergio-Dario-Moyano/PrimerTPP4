@@ -20,6 +20,30 @@
           <input type="email" formControlName="email" class="payment-form__input" placeholder="ejemplo@correo.com">
         </div>
 
+        @if (usuarioId() && perfil(); as p) {
+          @if (creditoDisponible() > 0 || maxEntradasGratis() > 0) {
+            <h2 class="payment-form__subtitle">Tus beneficios</h2>
+          }
+          @if (creditoDisponible() > 0) {
+            <label class="beneficio">
+              <input type="checkbox" [checked]="usarCredito()" (change)="usarCredito.set($any($event.target).checked)">
+              <span>Usar mi crédito a favor (<strong>$ {{ creditoDisponible() | number:'1.0-0' }}</strong> disponibles)</span>
+            </label>
+          }
+          @if (maxEntradasGratis() > 0) {
+            <div class="beneficio">
+              <span>🎟️ Entradas gratis (canje de puntos): usar</span>
+              <div class="beneficio__contador">
+                <button type="button" (click)="cambiarEntradasGratis(-1)" [disabled]="entradasGratisAUsar() === 0">-</button>
+                <strong>{{ entradasGratisAUsar() }}</strong>
+                <button type="button" (click)="cambiarEntradasGratis(1)" [disabled]="entradasGratisAUsar() >= maxEntradasGratis()">+</button>
+              </div>
+              <small>de {{ p.entradas_gratis }}</small>
+            </div>
+          }
+        }
+
+        @if (requiereTarjeta()) {
         <h2 class="payment-form__subtitle">Datos de la Tarjeta</h2>
         <div class="payment-form__group">
           <label class="payment-form__label">Número de Tarjeta</label>
@@ -36,9 +60,16 @@
             <input type="text" formControlName="cvc" class="payment-form__input" placeholder="123" maxlength="4">
           </div>
         </div>
+        } @else {
+          <p class="beneficio beneficio--ok">✅ Tu crédito y tus canjes cubren el total: no hace falta tarjeta.</p>
+        }
+
+        @if (puntosAGanar() > 0) {
+          <p class="puntos-a-ganar">⭐ Con esta compra sumás <strong>{{ puntosAGanar() | number:'1.0-0' }} puntos</strong>.</p>
+        }
 
         <button type="submit" class="payment-form__btn" [disabled]="procesando()">
-          {{ procesando() ? 'PROCESANDO...' : 'PAGAR $ ' + (totalPagar() | number:'1.0-0') }}
+          {{ procesando() ? 'PROCESANDO...' : (requiereTarjeta() ? 'PAGAR $ ' + (totalPagar() | number:'1.0-0') : 'CONFIRMAR COMPRA') }}
         </button>
       </form>
     </div>
@@ -49,11 +80,14 @@
         <h3 class="summary-card__title">Resumen de Compra</h3>
 
         <div class="summary-list">
-          <div class="summary-item">
-            <span>Entradas ({{ butacas().length }})</span>
-            <span>$ {{ subtotalEntradas() | number:'1.0-0' }}</span>
-          </div>
+          @for (linea of detalleEntradas(); track linea.tipo) {
+            <div class="summary-item">
+              <span>{{ linea.cantidad }}x {{ linea.tipo }}</span>
+              <span>$ {{ linea.precioTotal | number:'1.0-0' }}</span>
+            </div>
+          }
 
+          @if (!soloCandy()) {
           <div class="summary-item summary-item--small">
             <span>Butacas seleccionadas:</span>
             <span class="summary-item__seats">
@@ -62,15 +96,29 @@
               }
             </span>
           </div>
+          }
 
           @if (combos().length > 0) {
-            <div class="summary-divider"></div>
+            @if (!soloCandy()) { <div class="summary-divider"></div> }
             @for (combo of combos(); track combo.id) {
               <div class="summary-item">
                 <span>{{ combo.cantidad }}x {{ combo.nombre }}</span>
                 <span>$ {{ (combo.cantidad * combo.precioUnitario) | number:'1.0-0' }}</span>
               </div>
             }
+          }
+
+          @if (montoCombos() > 0) {
+            <div class="summary-item summary-item--discount">
+              <span>Entradas incluidas en combos ({{ entradasEnCombos() }})</span>
+              <span>- $ {{ montoCombos() | number:'1.0-0' }}</span>
+            </div>
+          }
+          @if (montoGratis() > 0) {
+            <div class="summary-item summary-item--discount">
+              <span>Entradas gratis por puntos ({{ entradasGratisAUsar() }})</span>
+              <span>- $ {{ montoGratis() | number:'1.0-0' }}</span>
+            </div>
           }
 
           <div class="summary-divider"></div>
@@ -101,6 +149,13 @@
             <div class="summary-item summary-item--discount">
               <span>Descuento ({{ descuentoPorcentaje() }}%)</span>
               <span>- $ {{ montoDescuento() | number:'1.0-0' }}</span>
+            </div>
+          }
+
+          @if (creditoAplicado() > 0) {
+            <div class="summary-item summary-item--discount">
+              <span>Crédito a favor</span>
+              <span>- $ {{ creditoAplicado() | number:'1.0-0' }}</span>
             </div>
           }
         </div>

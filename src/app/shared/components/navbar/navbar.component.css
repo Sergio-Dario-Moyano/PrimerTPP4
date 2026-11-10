@@ -161,3 +161,30 @@
     gap: 1.5rem;
   }
 }
+
+/* ----- Avisos de estreno ----- */
+.navbar__avisos { position: relative; }
+.navbar__campana {
+  position: relative; background: none; border: none;
+  font-size: 1.2rem; cursor: pointer; padding: 0.25rem 0.4rem;
+}
+.navbar__campana-badge {
+  position: absolute; top: -2px; right: -4px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 9px; background: #ef4444; color: #fff;
+  font-size: 0.7rem; font-weight: 700; line-height: 18px; text-align: center;
+}
+.navbar__avisos-panel {
+  position: absolute; right: 0; top: calc(100% + 0.5rem); z-index: 50;
+  width: 290px; max-width: 85vw;
+  background: #1a1a1a; border: 1px solid #333; border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); padding: 0.4rem;
+}
+.navbar__aviso {
+  display: flex; gap: 0.6rem; align-items: center; width: 100%;
+  background: none; border: none; border-radius: 8px;
+  padding: 0.5rem; color: #ddd; text-align: left; font-size: 0.85rem; cursor: pointer;
+}
+.navbar__aviso:hover { background: #262626; }
+.navbar__aviso img { width: 34px; height: 50px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.navbar__avisos-vacio { color: #888; font-size: 0.8rem; padding: 0.6rem; margin: 0; }

@@ -10,6 +10,101 @@
     </div>
 
     <nav class="profile-nav">
+      @if (esAdmin()) {
+        @for (seccion of seccionesAdmin; track seccion.ruta) {
+          <a [routerLink]="seccion.ruta" routerLinkActive="active">{{ seccion.icono }} {{ seccion.titulo }}</a>
+        }
+      }
+      <a routerLink="/admin/validar" routerLinkActive="active">📷 Validar QRs / PINs</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="cerrarSesion()">Cerrar Sesión</button>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal a la Derecha (Envuelto en la tarjeta oscura) -->
+  <main class="profile-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <div class="profile-layout">
+  Tarjeta Lateral Izquierda (Idéntica al panel de cliente)
+  <aside class="profile-sidebar">
+    <div class="user-info">
+      <div class="avatar-circle">
+        <span>{{ inicial() }}</span>
+      </div>
+      <h3 class="user-name">{{ nombreUsuario() }}</h3>
+      <p class="user-email">{{ emailUsuario() }}</p>
+    </div>
+
+    <nav class="profile-nav">
+      @if (esAdmin()) {
+        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          Gestión y Funciones
+        </a>
+      }
+      <a routerLink="/admin/validar" routerLinkActive="active">
+        Validar QRs / PINs
+      </a>
+      @if (esAdmin()) {
+        <a routerLink="/admin/reportes" routerLinkActive="active">
+          Reportes y Estadísticas
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-logout" (click)="cerrarSesion()">Cerrar Sesión</button>
+    </div>
+  </aside>
+
+  Contenido Principal a la Derecha (Envuelto en la tarjeta oscura)
+  <main class="profile-content">
+    <router-outlet></router-outlet>
+  </main>
+</div> -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <div class="profile-layout">
+  Tarjeta Lateral Izquierda (Idéntica al panel de cliente)
+  <aside class="profile-sidebar">
+    <div class="user-info">
+      <div class="avatar-circle">
+        <span>{{ inicial() }}</span>
+      </div>
+      <h3 class="user-name">{{ nombreUsuario() }}</h3>
+      <p class="user-email">{{ emailUsuario() }}</p>
+    </div>
+
+    <nav class="profile-nav">
       <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
         Gestión y Funciones
       </a>
@@ -26,8 +121,8 @@
     </div>
   </aside>
 
-  <!-- Contenido Principal a la Derecha (Envuelto en la tarjeta oscura) -->
+  Contenido Principal a la Derecha (Envuelto en la tarjeta oscura)
   <main class="profile-content">
     <router-outlet></router-outlet>
   </main>
-</div>
+</div> -->

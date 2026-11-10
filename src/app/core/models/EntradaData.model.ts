@@ -4,5 +4,7 @@ export interface EntradaData {
   codigo_qr: string;
   codigo_manual: string;
   funcion_id: string;
-  butacas?: { fila: string; columna: string | number };
+  precio_cobrado: number;
+  estado: string;
+  butacas?: { fila: string; columna: string | number; tipo?: string };
 }

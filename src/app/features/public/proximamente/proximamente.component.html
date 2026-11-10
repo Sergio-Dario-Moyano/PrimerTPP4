@@ -1,0 +1,45 @@
+<main class="proximamente l-container">
+  <header class="proximamente__header">
+    <h1>Próximamente</h1>
+    <p>Los estrenos de las próximas semanas. Activá la alerta y te avisamos cuando salgan las entradas.</p>
+  </header>
+
+  @if (cargando()) {
+    <p class="proximamente__vacio">Cargando estrenos…</p>
+  } @else {
+    <div class="proximamente__grid">
+      @for (p of peliculas(); track p.id) {
+        <article class="estreno">
+          <div class="estreno__poster">
+            <img [src]="p.poster" [alt]="p.titulo">
+            <span class="estreno__clasif">{{ p.clasificacion }}</span>
+            @if (p.enPreventa) { <span class="estreno__preventa">PREVENTA</span> }
+          </div>
+
+          <div class="estreno__info">
+            <span class="estreno__fecha">
+              @if (p.estreno) { Estreno {{ p.estreno | date:"EEEE d 'de' MMMM" }} } @else { Fecha a confirmar }
+            </span>
+            <h2>{{ p.titulo }}</h2>
+            <p class="estreno__generos">{{ p.generos.join(' · ') }}</p>
+            <p class="estreno__sinopsis">{{ p.sinopsis }}</p>
+
+            <div class="estreno__acciones">
+              @if (p.ventaAbierta) {
+                <a class="btn btn--primario" [routerLink]="['/pelicula', p.id]">
+                  🎟️ Comprar entradas @if (p.enPreventa && p.precioPreventa) { (${{ p.precioPreventa }}) }
+                </a>
+              }
+              <button type="button" class="btn" [class.btn--activa]="conAlerta().has(p.id)"
+                      [disabled]="procesando() === p.id" (click)="toggleAlerta(p)">
+                {{ conAlerta().has(p.id) ? '🔔 Alerta activada' : '🔕 Avisarme cuando salgan las entradas' }}
+              </button>
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <p class="proximamente__vacio">No hay estrenos anunciados por ahora.</p>
+      }
+    </div>
+  }
+</main>

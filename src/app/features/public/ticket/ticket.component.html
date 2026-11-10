@@ -53,9 +53,15 @@
               </div>
             }
           </div>
+        } @else if (entradas().length === 0) {
+          <div class="ticket-card__movie-info">
+            <h3 class="ticket-card__movie-title">🍿 Compra de Candy Bar</h3>
+            <p class="ticket-card__client">Retirá tus productos en el mostrador mostrando este QR.</p>
+          </div>
         }
 
         <!-- SECCIÓN DE BUTACAS -->
+        @if (entradas().length > 0) {
         <div class="ticket-card__section">
           <h3 class="ticket-card__subtitle">Tus Butacas ({{ entradas().length }})</h3>
           <ul class="ticket-card__list">
@@ -67,6 +73,7 @@
             }
           </ul>
         </div>
+        }
 
         <!-- SECCIÓN CANDY BAR -->
         @if (combos().length > 0) {
@@ -111,14 +118,16 @@
           <button class="ticket__btn ticket__btn--secondary" (click)="descargarTicket()">Descargar Ticket</button>
           <button class="ticket__btn ticket__btn--primary" routerLink="/">Volver a la Cartelera</button>
 
-          @if (compra()?.estado !== 'cancelada') {
-            <button class="ticket__btn ticket__btn--danger" (click)="intentarCancelar(compra())">
-              Cancelar Entrada
-            </button>
-          } @else {
+          @if (compra()?.estado === 'cancelada') {
             <div class="ticket-card__badge-cancel">
               COMPRA CANCELADA
             </div>
+          } @else if (motivoNoCancelable(); as motivo) {
+            <p class="ticket-card__no-cancelable">{{ motivo }}</p>
+          } @else {
+            <button class="ticket__btn ticket__btn--danger" (click)="intentarCancelar(compra())">
+              Cancelar Entrada
+            </button>
           }
         </div>
       </footer>
@@ -130,7 +139,14 @@
   <div class="cancel-modal-overlay" data-html2canvas-ignore>
     <div class="cancel-modal-container">
       <h3>¿Estás seguro de cancelar?</h3>
-      <p>Recibirás <strong>${{ datosCompraPendiente()?.total_pagado }} puntos</strong> de reembolso en tu perfil.</p>
+      <p>
+        No se devuelve dinero: vas a recibir
+        <strong>${{ (datosCompraPendiente()?.total_pagado ?? 0) + (datosCompraPendiente()?.credito_usado ?? 0) }}</strong>
+        de <strong>crédito</strong> en tu cuenta para usar en tu próxima compra.
+        @if (datosCompraPendiente()?.puntos_ganados) {
+          Se descuentan los {{ datosCompraPendiente()?.puntos_ganados }} puntos que sumó esta compra.
+        }
+      </p>
 
       <div class="cancel-modal-actions">
         <button class="ticket__btn ticket__btn--secondary" (click)="cancelarProceso()">No, mantener</button>

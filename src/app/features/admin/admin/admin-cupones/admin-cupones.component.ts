@@ -1,7 +1,8 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SupabaseService } from '../../../../core/services/supabase';
+import { LogService } from '../../../../core/services/log.service';
+import { CODIGO_BIENVENIDA } from '../../../../core/utils/constantes';
 
 export interface CuponAdmin {
   id: string;
@@ -11,126 +12,125 @@ export interface CuponAdmin {
   activo: boolean;
 }
 
+
+/**
+ * Cupones: alta y EDICIÓN (porcentaje, restricción +50, activo).
+ * El porcentaje del cupón de bienvenida se configura acá (mail 30/01).
+ */
 @Component({
   selector: 'app-admin-cupones',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './admin-cupones.component.html',
-  styleUrls: ['./admin-cupones.component.css']
+  styleUrls: ['../admin-shared.css']
 })
 export class AdminCuponesComponent implements OnInit {
   private fb = inject(FormBuilder);
   private supabase = inject(SupabaseService).client;
+  private log = inject(LogService);
 
-  cargando = signal<boolean>(false);
+  readonly CODIGO_BIENVENIDA = CODIGO_BIENVENIDA;
+
   cupones = signal<CuponAdmin[]>([]);
+  editandoId = signal<string | null>(null);
+  cargando = signal<boolean>(false);
   mensajeExito = signal<string>('');
   mensajeError = signal<string>('');
 
-  cuponForm: FormGroup = this.fb.group({
-    codigo: ['', [Validators.required, Validators.minLength(3)]],
+  nuevoForm = this.fb.nonNullable.group({
+    codigo: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[A-Za-z0-9_-]+$/)]],
     porcentaje_descuento: [20, [Validators.required, Validators.min(1), Validators.max(100)]],
+    solo_mayores_50: [false]
+  });
+
+  edicionForm = this.fb.nonNullable.group({
+    codigo: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[A-Za-z0-9_-]+$/)]],
+    porcentaje_descuento: [0, [Validators.required, Validators.min(1), Validators.max(100)]],
     solo_mayores_50: [false],
     activo: [true]
   });
 
-  ngOnInit() {
-    this.cargarCupones();
+  async ngOnInit(): Promise<void> {
+    await this.cargar();
   }
 
-  async cargarCupones() {
-    try {
-      const { data, error } = await this.supabase
-        .from('cupones')
-        .select('*')
-        .order('codigo', { ascending: true });
+  async cargar(): Promise<void> {
+    const { data, error } = await this.supabase.from('cupones').select('*').order('codigo');
+    if (error) { this.mensajeError.set(error.message); return; }
+    this.cupones.set(data ?? []);
+  }
 
-      if (error) throw error;
-      this.cupones.set(data || []);
-    } catch (err) {
-      console.error('Error cargando cupones:', err);
+  async crear(): Promise<void> {
+    if (this.nuevoForm.invalid) { this.nuevoForm.markAllAsTouched(); return; }
+    const v = this.nuevoForm.getRawValue();
+    const codigo = v.codigo.trim().toUpperCase();
+
+    this.cargando.set(true);
+    this.limpiarMensajes();
+    const { data, error } = await this.supabase.from('cupones').insert([{
+      codigo, porcentaje_descuento: Number(v.porcentaje_descuento), solo_mayores_50: v.solo_mayores_50, activo: true
+    }]).select('id').single();
+    this.cargando.set(false);
+
+    if (error) {
+      this.mensajeError.set(error.code === '23505' ? `Ya existe un cupón ${codigo}.` : error.message);
+      return;
     }
+    await this.log.registrar('CREAR_CUPON', 'cupones', data.id,
+      `Se creó el cupón ${codigo} (${v.porcentaje_descuento}%${v.solo_mayores_50 ? ', solo +50' : ''})`);
+    this.mensajeExito.set(`Cupón ${codigo} creado.`);
+    this.nuevoForm.reset();
+    await this.cargar();
   }
 
-  async guardarCupon() {
-    if (this.cuponForm.invalid) {
-      this.cuponForm.markAllAsTouched();
+  editar(c: CuponAdmin): void {
+    this.limpiarMensajes();
+    this.editandoId.set(c.id);
+    this.edicionForm.reset({
+      codigo: c.codigo, porcentaje_descuento: c.porcentaje_descuento,
+      solo_mayores_50: c.solo_mayores_50, activo: c.activo
+    });
+    // El código BIENVENIDA lo usa la app para el cupón de primera compra: no se renombra
+    if (c.codigo === CODIGO_BIENVENIDA) this.edicionForm.controls.codigo.disable();
+    else this.edicionForm.controls.codigo.enable();
+  }
+
+  cancelar(): void {
+    this.editandoId.set(null);
+  }
+
+  async guardar(c: CuponAdmin): Promise<void> {
+    if (this.edicionForm.invalid) { this.edicionForm.markAllAsTouched(); return; }
+    const v = this.edicionForm.getRawValue();
+    const cambios = {
+      codigo: (v.codigo || c.codigo).trim().toUpperCase(),
+      porcentaje_descuento: Number(v.porcentaje_descuento),
+      solo_mayores_50: v.solo_mayores_50,
+      activo: v.activo
+    };
+
+    const { error } = await this.supabase.from('cupones').update(cambios).eq('id', c.id);
+    if (error) {
+      this.mensajeError.set(error.code === '23505' ? `Ya existe un cupón ${cambios.codigo}.` : error.message);
       return;
     }
 
-    this.cargando.set(true);
-    this.mensajeError.set('');
-    this.mensajeExito.set('');
+    const detalle: string[] = [];
+    if (c.codigo !== cambios.codigo) detalle.push(`código ${c.codigo} → ${cambios.codigo}`);
+    if (Number(c.porcentaje_descuento) !== cambios.porcentaje_descuento) detalle.push(`descuento ${c.porcentaje_descuento}% → ${cambios.porcentaje_descuento}%`);
+    if (c.solo_mayores_50 !== cambios.solo_mayores_50) detalle.push(`solo +50: ${cambios.solo_mayores_50 ? 'sí' : 'no'}`);
+    if (c.activo !== cambios.activo) detalle.push(cambios.activo ? 'activado' : 'desactivado');
 
-    try {
-      const formVal = this.cuponForm.getRawValue();
-      const codigoUpper = formVal.codigo.trim().toUpperCase();
-
-      const { data: authData } = await this.supabase.auth.getUser();
-      const usuarioId = authData?.user?.id;
-
-      // Insertar nuevo cupón
-      const { data: nuevoCupon, error: errInsert } = await this.supabase
-        .from('cupones')
-        .insert([{
-          codigo: codigoUpper,
-          porcentaje_descuento: Number(formVal.porcentaje_descuento),
-          solo_mayores_50: formVal.solo_mayores_50,
-          activo: formVal.activo
-        }])
-        .select()
-        .single();
-
-      if (errInsert) throw errInsert;
-
-      // Registrar auditoría en logs_actividad
-      if (usuarioId) {
-        await this.supabase.from('logs_actividad').insert([{
-          perfil_id: usuarioId,
-          accion: 'CREAR_CUPON',
-          entidad_afectada: 'cupones',
-          entidad_id: nuevoCupon.id,
-          detalle: `Se creó el cupón ${codigoUpper} con ${formVal.porcentaje_descuento}% de descuento`
-        }]);
-      }
-
-      this.mensajeExito.set(`¡Cupón "${codigoUpper}" creado con éxito!`);
-      this.cuponForm.reset({ porcentaje_descuento: 20, solo_mayores_50: false, activo: true });
-      await this.cargarCupones();
-
-    } catch (err: any) {
-      console.error(err);
-      this.mensajeError.set(err.message || 'Error al guardar el cupón.');
-    } finally {
-      this.cargando.set(false);
-      setTimeout(() => this.mensajeExito.set(''), 4000);
+    if (detalle.length) {
+      await this.log.registrar('MODIFICAR_CUPON', 'cupones', c.id, `Cupón ${c.codigo}: ${detalle.join(', ')}`);
     }
+    this.mensajeExito.set(`Cupón ${cambios.codigo} actualizado.`);
+    this.editandoId.set(null);
+    await this.cargar();
   }
 
-  async toggleEstadoCupon(cupon: CuponAdmin) {
-    try {
-      const nuevoEstado = !cupon.activo;
-      const { error } = await this.supabase
-        .from('cupones')
-        .update({ activo: nuevoEstado })
-        .eq('id', cupon.id);
-
-      if (error) throw error;
-
-      const { data: authData } = await this.supabase.auth.getUser();
-      if (authData?.user) {
-        await this.supabase.from('logs_actividad').insert([{
-          perfil_id: authData.user.id,
-          accion: 'MODIFICAR_CUPON',
-          entidad_afectada: 'cupones',
-          entidad_id: cupon.id,
-          detalle: `Se cambió el estado del cupón ${cupon.codigo} a activo: ${nuevoEstado}`
-        }]);
-      }
-
-      await this.cargarCupones();
-    } catch (err) {
-      console.error('Error al cambiar estado del cupón:', err);
-    }
+  private limpiarMensajes(): void {
+    this.mensajeExito.set('');
+    this.mensajeError.set('');
   }
 }

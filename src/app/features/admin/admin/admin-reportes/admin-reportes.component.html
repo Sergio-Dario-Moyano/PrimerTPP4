@@ -1,39 +1,116 @@
-<div class="reportes-container">
-  <h2>Reportes y Estadísticas - CineLanús</h2>
+<div class="admin-container">
+  <h2>Reportes</h2>
+  <p class="admin-sub">Facturación = lo cobrado con tarjeta en compras no canceladas (el crédito usado no se cuenta como ingreso nuevo).</p>
+
+  <!-- Filtros del período: una sola fila arriba de todo -->
+  <div class="admin-form filtros-periodo">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="desde">Desde</label>
+        <input id="desde" type="text" appMascaraFecha="fecha" [ngModel]="desdeTexto()" (ngModelChange)="desdeTexto.set($event)">
+      </div>
+      <div class="form-group">
+        <label for="hasta">Hasta</label>
+        <input id="hasta" type="text" appMascaraFecha="fecha" [ngModel]="hastaTexto()" (ngModelChange)="hastaTexto.set($event)">
+      </div>
+      <div class="form-group filtros-periodo__boton">
+        <button type="button" class="admin-btn" (click)="cargarFacturacion()">Ver reporte</button>
+      </div>
+    </div>
+    <div class="generos-grid">
+      <button type="button" class="genero-chip" (click)="aplicarPreset('7dias')">Últimos 7 días</button>
+      <button type="button" class="genero-chip" (click)="aplicarPreset('mes')">Este mes</button>
+      <button type="button" class="genero-chip" (click)="aplicarPreset('mesAnterior')">Mes anterior</button>
+    </div>
+  </div>
+
+  @if (error()) { <div class="alert error">{{ error() }}</div> }
 
   @if (cargando()) {
-    <p class="loading">Cargando métricas...</p>
-  } @else {
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <h3>Total Facturado</h3>
-        <p class="metric-value">$ {{ totalFacturado() | number:'1.0-0' }}</p>
-      </div>
-      <div class="metric-card">
-        <h3>Entradas Vendidas</h3>
-        <p class="metric-value">{{ totalEntradasVendidas() }}</p>
-      </div>
+    <p class="admin-sub">Cargando métricas…</p>
+  } @else if (datos(); as d) {
+    <div class="kpis">
+      <div class="kpi"><span class="kpi__label">Facturado</span><span class="kpi__valor">{{ d.totalFacturado | currency:'ARS':'$':'1.0-0' }}</span></div>
+      <div class="kpi"><span class="kpi__label">Entradas vendidas</span><span class="kpi__valor">{{ d.totalEntradas | number }}</span></div>
+      <div class="kpi"><span class="kpi__label">Compras</span><span class="kpi__valor">{{ d.totalCompras | number }}</span></div>
+      <div class="kpi"><span class="kpi__label">Ticket promedio</span><span class="kpi__valor">{{ ticketPromedio() | currency:'ARS':'$':'1.0-0' }}</span></div>
     </div>
 
-    <div class="export-actions">
-      <button class="btn-export pdf" (click)="exportarPDF()">Exportar a PDF</button>
-      <button class="btn-export excel" (click)="exportarExcel()">Exportar a Excel (CSV)</button>
+    <div class="listado-seccion">
+      <div class="seccion-cabecera">
+        <h3>Facturación por día</h3>
+        <div class="seccion-cabecera__acciones">
+          <button type="button" class="btn-toggle" (click)="exportarPDF()">⬇ PDF</button>
+          <button type="button" class="btn-toggle" (click)="exportarExcel()">⬇ Excel</button>
+        </div>
+      </div>
+      <app-grafico-barras [etiquetas]="etiquetasDias()" [valores]="valoresFacturacion()" [formatoMoneda]="true"
+                          descripcion="Facturación por día del período" />
+
+      <h3 class="subtitulo-grafico">Entradas vendidas por día</h3>
+      <app-grafico-barras [etiquetas]="etiquetasDias()" [valores]="valoresEntradas()" unidad="entradas" [alto]="200"
+                          descripcion="Entradas vendidas por día del período" />
+
+      <details class="tabla-detalle">
+        <summary>Ver tabla día por día</summary>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Fecha</th><th>Compras</th><th>Entradas</th><th>Facturación</th></tr></thead>
+            <tbody>
+              @for (f of d.porDia; track f.fecha) {
+                <tr [class.fila-vacia]="f.compras === 0">
+                  <td>{{ fechaCorta(f.fecha) }}</td><td>{{ f.compras }}</td><td>{{ f.entradas }}</td>
+                  <td>{{ f.facturacion | currency:'ARS':'$':'1.0-0' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr><th>Total</th><th>{{ d.totalCompras }}</th><th>{{ d.totalEntradas }}</th><th>{{ d.totalFacturado | currency:'ARS':'$':'1.0-0' }}</th></tr>
+            </tfoot>
+          </table>
+        </div>
+      </details>
     </div>
 
-    <div class="ranking-section">
-      <h3>Películas más vistas</h3>
-      <ul>
-        @for (p of peliculasTop(); track p.titulo) {
-          <li><span>{{ p.titulo }}</span> <strong>{{ p.entradas_vendidas }} entradas</strong></li>
+    <div class="reportes-grid">
+      <div class="listado-seccion">
+        <div class="seccion-cabecera">
+          <h3>Películas más vistas</h3>
+          <div class="seccion-cabecera__acciones">
+            <button type="button" class="genero-chip" [class.selected]="periodo() === 'semana'" (click)="cambiarPeriodo('semana')">Semana</button>
+            <button type="button" class="genero-chip" [class.selected]="periodo() === 'mes'" (click)="cambiarPeriodo('mes')">Mes</button>
+          </div>
+        </div>
+        <div class="navegador-periodo">
+          <button type="button" class="btn-toggle" (click)="moverPeriodo(-1)" aria-label="Período anterior">‹</button>
+          <span>
+            @if (periodo() === 'mes') { {{ rangoVistas()[0] | date:'MMMM yyyy' }} }
+            @else { {{ rangoVistas()[0] | date:'dd/MM' }} – {{ rangoVistas()[1] | date:'dd/MM/yyyy' }} }
+          </span>
+          <button type="button" class="btn-toggle" (click)="moverPeriodo(1)" [disabled]="desplazamiento() === 0" aria-label="Período siguiente">›</button>
+        </div>
+        @if (topVistas().length) {
+          <app-grafico-barras [etiquetas]="nombresTopVistas()" [valores]="cantidadesTopVistas()" [horizontal]="true"
+                              [destacarPrimero]="true" unidad="entradas" [alto]="40 + topVistas().length * 38"
+                              descripcion="Ranking de películas más vistas" />
+          <p class="destacado">🏆 <strong>{{ topVistas()[0].nombre }}</strong> — {{ topVistas()[0].cantidad }} entradas</p>
+        } @else {
+          <p class="empty">Sin funciones con entradas en este período.</p>
         }
-      </ul>
+      </div>
 
-      <h3>Productos del Candy Bar más vendidos</h3>
-      <ul>
-        @for (c of candyTop(); track c.nombre) {
-          <li><span>{{ c.nombre }}</span> <strong>{{ c.cantidad }} unidades</strong></li>
+      <div class="listado-seccion">
+        <h3>Candy más vendido</h3>
+        <p class="form-ayuda">En el período del reporte de facturación.</p>
+        @if (topCandy().length) {
+          <app-grafico-barras [etiquetas]="nombresTopCandy()" [valores]="cantidadesTopCandy()" [horizontal]="true"
+                              [destacarPrimero]="true" unidad="u." [alto]="40 + topCandy().length * 38"
+                              descripcion="Ranking de productos del candy más vendidos" />
+          <p class="destacado">🍿 <strong>{{ topCandy()[0].nombre }}</strong> — {{ topCandy()[0].cantidad }} unidades</p>
+        } @else {
+          <p class="empty">No se vendieron productos del candy en este período.</p>
         }
-      </ul>
+      </div>
     </div>
   }
 </div>

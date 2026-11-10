@@ -151,3 +151,6 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.canje-card__link { color: #f5b301; font-size: 0.85rem; text-decoration: underline; }
+.historial-canjes__empty a { color: #f5b301; }

@@ -1,5 +1,93 @@
 <div class="admin-container">
   <h2>Validación de Entradas y Candy Bar</h2>
+  <p class="sub">
+    Escaneá el QR del ticket o ingresá el código a mano (ej. <strong>TK-A1B2C3</strong>).
+    Una vez validado, el código deja de funcionar para ese sector.
+  </p>
+
+  <!-- Selector de sector: el admin puede alternar; los empleados quedan fijos -->
+  <div class="modo-tabs" role="tablist">
+    <button type="button" role="tab"
+            class="modo-tab" [class.modo-tab--activo]="modo() === 'cine'"
+            [disabled]="!puedeCambiarModo() && modo() !== 'cine'"
+            (click)="cambiarModo('cine')">
+      🎬 Ingreso a sala
+    </button>
+    <button type="button" role="tab"
+            class="modo-tab" [class.modo-tab--activo]="modo() === 'candy'"
+            [disabled]="!puedeCambiarModo() && modo() !== 'candy'"
+            (click)="cambiarModo('candy')">
+      🍿 Candy Bar
+    </button>
+  </div>
+
+  <!-- Lector de cámara -->
+  <div class="scanner">
+    @if (camaraActiva()) {
+      <div id="lector-qr" class="scanner__video"></div>
+      <button type="button" class="admin-btn admin-btn--secundario" (click)="detenerCamara()">Cerrar cámara</button>
+    } @else {
+      <button type="button" class="admin-btn" (click)="iniciarCamara()" [disabled]="cargando()">
+        📷 Escanear QR con la cámara
+      </button>
+    }
+  </div>
+
+  <p class="separador"><span>o ingresá el código</span></p>
+
+  <form [formGroup]="validarForm" (ngSubmit)="procesarValidacion()" class="admin-form">
+    <div class="form-group">
+      <label for="codigo">Código del ticket</label>
+      <input id="codigo" type="text" formControlName="codigoManual" placeholder="TK-A1B2C3"
+             autocomplete="off" autocapitalize="characters">
+    </div>
+
+    <button type="submit" class="admin-btn" [disabled]="cargando()">
+      {{ cargando() ? 'Validando...' : 'Validar Código' }}
+    </button>
+  </form>
+
+  @if (mensajeError()) {
+    <div class="alert error">⛔ {{ mensajeError() }}</div>
+  }
+
+  @if (resultadoValidacion(); as r) {
+    <div class="resultado-card success">
+      <h3>✅ {{ r.tipo === 'CINE' ? '¡Ingreso habilitado!' : '¡Entregar productos!' }}</h3>
+      <p><strong>Ticket:</strong> {{ r.codigo }}</p>
+      <p><strong>Cliente:</strong> {{ r.cliente }}</p>
+      @if (r.tipo === 'CINE') {
+        <p><strong>Película:</strong> {{ r.pelicula }}</p>
+        <p><strong>Sala:</strong> {{ r.sala }} — {{ r.fechaHora | date:'dd/MM HH:mm' }}</p>
+        @if (r.restriccionEdad) {
+          <p class="aviso-edad">⚠️ Película +{{ r.restriccionEdad }}: verificar edad / adulto acompañante.</p>
+        }
+      }
+      <ul class="resultado-items">
+        @for (item of r.items; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    </div>
+  }
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <div class="admin-container">
+  <h2>Validación de Entradas y Candy Bar</h2>
   <p class="sub">Ingrese el código PIN manual de la entrada o del producto de confitería para registrar su validación o entrega.</p>
 
   <form [formGroup]="validarForm" (ngSubmit)="procesarValidacion()" class="admin-form">
@@ -32,4 +120,4 @@
       <p class="badge-success">{{ resultadoValidacion().estado }}</p>
     </div>
   }
-</div>
+</div> -->

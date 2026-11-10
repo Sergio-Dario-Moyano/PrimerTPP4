@@ -248,3 +248,17 @@
     top: 2rem; /* El resumen se queda pegado al hacer scroll hacia abajo */
   }
 }
+
+/* ----- Secciones, categorías y combos destacados ----- */
+.candy__seccion { color: #f5b301; font-size: 1.15rem; margin: 1.5rem 0 0.8rem; }
+.candy__categorias { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.candy__chip {
+  background: #222; color: #bbb; border: 1px solid #444;
+  padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+.candy__chip--activo { background: #f5b301; color: #000; border-color: #f5b301; }
+
+.product-card--destacado { border: 1px solid #f5b301 !important; box-shadow: 0 0 0 1px rgba(245, 179, 1, 0.25); }
+.product-card__badge--entrada { background: #22c55e !important; color: #000 !important; }
+.product-card__nota { color: #9ca3af; font-size: 0.75rem; margin: 0.25rem 0 0; }
+.product-card__btn-add:disabled, .quantity-controls__btn:disabled { opacity: 0.4; cursor: not-allowed; }

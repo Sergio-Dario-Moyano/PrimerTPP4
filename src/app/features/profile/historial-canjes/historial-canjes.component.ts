@@ -1,87 +1,33 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { SupabaseService } from '../../../core/services/supabase';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
+import { FidelizacionService, CanjeHistorial } from '../../../core/services/fidelizacion.service';
 
-export interface CanjeItem {
-  id: string;
-  fecha_compra: string;
-  total_pagado: number;
-  cupon: {
-    codigo: string;
-    porcentaje_descuento: number;
-  } | null;
-}
-
+/** Historial de canjes de puntos (mail 03/03). */
 @Component({
   selector: 'app-historial-canjes',
   standalone: true,
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './historial-canjes.component.html',
   styleUrls: ['./historial-canjes.component.css'],
 })
 export class HistorialCanjesComponent implements OnInit {
-  private supabaseService = inject(SupabaseService);
+  private auth = inject(AuthService);
+  private fidelizacion = inject(FidelizacionService);
 
   cargandoHistorial = signal<boolean>(true);
   error = signal<string | null>(null);
-  canjes = signal<CanjeItem[]>([]);
+  canjes = signal<CanjeHistorial[]>([]);
 
-  ngOnInit() {
-    this.obtenerHistorialCanjes();
-  }
-
-  async obtenerHistorialCanjes() {
-    this.cargandoHistorial.set(true);
-    const supabase = this.supabaseService.client;
-
+  async ngOnInit(): Promise<void> {
+    const user = this.auth.usuarioActual();
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      const usuarioActivo = authData?.user;
-
-      if (authError || !usuarioActivo) {
-        throw new Error('Usuario no autenticado');
-      }
-
-      const { data, error: fetchError } = await supabase
-        .from('compras')
-        .select(`
-          id,
-          fecha_compra,
-          total_pagado,
-          cupones (
-            codigo,
-            porcentaje_descuento
-          )
-        `)
-        .eq('perfil_id', usuarioActivo.id)
-        .not('cupon_id', 'is', null)
-        .order('fecha_compra', { ascending: false });
-
-      if (fetchError) throw fetchError;
-
-      // Mapeo seguro evitando usar 'any'
-      const canjesMapeados: CanjeItem[] = (data || []).map((item: any) => {
-        // Supabase puede devolver la relación como objeto o array según la foreign key
-        const cuponRelacion = Array.isArray(item.cupones) ? item.cupones[0] : item.cupones;
-
-        return {
-          id: item.id,
-          fecha_compra: item.fecha_compra,
-          total_pagado: Number(item.total_pagado),
-          cupon: cuponRelacion ? {
-            codigo: cuponRelacion.codigo,
-            porcentaje_descuento: Number(cuponRelacion.porcentaje_descuento)
-          } : null
-        };
-      });
-
-      this.canjes.set(canjesMapeados);
-
+      if (!user) throw new Error('Usuario no autenticado');
+      this.canjes.set(await this.fidelizacion.getHistorial(user.id));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al obtener el historial de canjes';
-      this.error.set(msg);
-      console.error('Error:', err);
-      this.canjes.set([]);
+      console.error(err);
+      this.error.set(err instanceof Error ? err.message : 'Error al obtener el historial de canjes');
     } finally {
       this.cargandoHistorial.set(false);
     }

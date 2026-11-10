@@ -455,3 +455,14 @@
     flex-direction: row;
   }
 }
+
+/* Aviso cuando la compra ya no se puede cancelar */
+.ticket-card__no-cancelable {
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px dashed #555;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 0.85rem;
+  text-align: center;
+}

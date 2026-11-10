@@ -17,6 +17,9 @@ import { FuncionesPeliculaComponent } from '../../../shared/components/funciones
 
 type EstadoResenaType = 'cargando' | 'puede_comentar' | 'ya_comentada' | 'no_vista' | 'no_logueado';
 
+import { ventaAbierta, enPreventa } from '../../../core/utils/precios';
+import { desdeBD } from '../../../shared/utils/fechas';
+
 @Component({
   selector: 'app-detalle-pelicula',
   standalone: true,
@@ -36,6 +39,10 @@ export class DetallePeliculaComponent implements OnInit {
   pelicula = signal<Pelicula | null>(null);
   resenas = signal<Resena[]>([]);
   funciones = signal<FuncionPelicula[]>([]);
+  /** Las películas "próximamente" solo venden entradas desde que abre la preventa. */
+  ventaAbierta = signal<boolean>(true);
+  aperturaVenta = signal<Date | null>(null);
+  esPreventa = signal<boolean>(false);
   cargando = signal<boolean>(true);
   enviando = signal<boolean>(false);
 
@@ -90,6 +97,10 @@ export class DetallePeliculaComponent implements OnInit {
         idiomas: ['Castellano'],
         hero_imagen: peliculaData.hero_imagen
       });
+
+      this.ventaAbierta.set(ventaAbierta(peliculaData));
+      this.esPreventa.set(enPreventa(peliculaData));
+      this.aperturaVenta.set(desdeBD(peliculaData.preventa_inicio) ?? desdeBD(peliculaData.fecha_estreno ?? null));
 
       this.resenas.set(resenasData as Resena[]);
       this.funciones.set((funcionesData.data as FuncionPelicula[]) || []);

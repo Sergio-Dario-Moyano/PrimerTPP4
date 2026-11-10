@@ -53,8 +53,8 @@ export class CarteleraComponent implements OnInit {
             poster_url: p.url_imagen,
             clasificacion: clasificacion,
             generos: generosMapeados,
-            formatos: ['2D', '3D'],
-            idiomas: ['Castellano'],
+            // Formatos e idiomas reales de las funciones futuras de la película
+            ...this.formatosEIdiomas(p),
             hero_imagen: p.hero_imagen,
             entradasVendidas: Number(p.entradas_vendidas || 0)
           };
@@ -85,6 +85,16 @@ export class CarteleraComponent implements OnInit {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  private formatosEIdiomas(p: RawPelicula): { formatos: string[]; idiomas: string[] } {
+    const ahora = new Date();
+    const futuras = (p.funciones ?? []).filter(f => new Date(f.fecha_hora.replace(' ', 'T')) >= ahora);
+    const orden = ['2D', '3D', '4D', '5D'];
+    return {
+      formatos: [...new Set(futuras.map(f => f.formato))].sort((a, b) => orden.indexOf(a) - orden.indexOf(b)),
+      idiomas: [...new Set(futuras.map(f => f.idioma === 'subtitulada' ? 'Subtitulada' : 'Castellano'))]
+    };
   }
 
   top3Peliculas = computed(() => {
