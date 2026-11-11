@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 
 import { SupabaseService } from '../../../core/services/supabase';
 import { PeliculaService } from '../../../core/services/pelicula.service';
@@ -20,10 +20,11 @@ type EstadoResenaType = 'cargando' | 'puede_comentar' | 'ya_comentada' | 'no_vis
 import { ventaAbierta, enPreventa } from '../../../core/utils/precios';
 import { desdeBD } from '../../../shared/utils/fechas';
 
+import { ReservaService } from '../../../core/services/reserva.service';
 @Component({
   selector: 'app-detalle-pelicula',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, FuncionesPeliculaComponent],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, FuncionesPeliculaComponent],
   templateUrl: './detalle-pelicula.component.html',
   styleUrls: ['./detalle-pelicula.component.css']
 })
@@ -35,6 +36,11 @@ export class DetallePeliculaComponent implements OnInit {
   private modalService = inject(ModalService);
   private router = inject(Router);
   private supabaseService = inject(SupabaseService);
+  private reservaService = inject(ReservaService);
+
+  /** Viene de la notificación "Función cancelada": se le ofrece reubicarse con su crédito. */
+  reubicando = signal<boolean>(false);
+  creditoDisponible = signal<number>(0);
 
   pelicula = signal<Pelicula | null>(null);
   resenas = signal<Resena[]>([]);
@@ -68,6 +74,17 @@ export class DetallePeliculaComponent implements OnInit {
     if (id) {
       this.cargarDatos(id);
     }
+    if (this.route.snapshot.queryParamMap.get('reubicar')) this.prepararReubicacion();
+  }
+
+  private async prepararReubicacion(): Promise<void> {
+    const user = this.authService.usuarioActual() ?? (await this.supabaseService.client.auth.getUser()).data.user;
+    if (!user) return;
+    const { data } = await this.supabaseService.client
+      .from('perfiles').select('credito_favor').eq('id', user.id).single();
+    this.creditoDisponible.set(Number(data?.credito_favor ?? 0));
+    this.reubicando.set(true);
+    this.reservaService.reubicacion.set(true);
   }
 
   async cargarDatos(id: string): Promise<void> {
@@ -76,7 +93,7 @@ export class DetallePeliculaComponent implements OnInit {
 
       const peliculaData: RawPelicula = await this.peliculaService.getPeliculaById(id);
       const resenasData = await this.reseniaService.getResenasPorPelicula(id);
-      const funcionesData = await this.supabaseService.client.from('funciones').select('*').eq('pelicula_id', id);
+      const funcionesData = await this.supabaseService.client.from('funciones').select('*').eq('pelicula_id', id).eq('estado', 'activa');
       const estadoResenaData = await this.reseniaService.puedeDejarResena(id);
 
       const generosMapeados = peliculaData.pelicula_genero && peliculaData.pelicula_genero.length > 0

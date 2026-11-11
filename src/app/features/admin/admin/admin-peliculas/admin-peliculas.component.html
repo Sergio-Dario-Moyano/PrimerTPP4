@@ -2,6 +2,14 @@
   <h2>Películas</h2>
   <p class="admin-sub">Alta y edición de películas. Las imágenes se suben arrastrándolas.</p>
 
+  @if (propuesta(); as p) {
+    <div class="alert success propuesta-aviso">
+      💡 Creando la película a partir de la propuesta de <strong>{{ p.autor }}</strong> ("{{ p.titulo }}").
+      Completá imágenes, duración y precio. Al guardar, la propuesta queda aceptada y le avisamos.
+      <button type="button" class="btn-toggle" (click)="descartarPropuesta()">Descartar</button>
+    </div>
+  }
+
   <form [formGroup]="form" (ngSubmit)="guardar()" class="admin-form">
     <h3>{{ editando() ? 'Editando: ' + editando()!.titulo : 'Nueva película' }}</h3>
 

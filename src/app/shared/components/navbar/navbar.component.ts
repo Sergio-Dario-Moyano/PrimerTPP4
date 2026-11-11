@@ -1,20 +1,21 @@
-import { Component, inject, signal, effect } from '@angular/core';
+import { Component, inject, signal, effect, computed } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { SupabaseService } from '../../../core/services/supabase';
 import { AlertasService } from '../../../core/services/alertas.service';
+import { PermisosService } from '../../../core/services/permisos.service';
+import { NotificacionesService, Notificacion } from '../../../core/services/notificaciones.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, DatePipe],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.css',
 })
 export class NavbarComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
-  private supabase = inject(SupabaseService).client;
   private alertasService = inject(AlertasService);
 
   // Avisos de estreno (campanita)
@@ -24,45 +25,50 @@ export class NavbarComponent {
   usuarioActual = this.authService.usuarioActual;
   menuAbierto = signal<boolean>(false);
 
-  // Signal para controlar si el usuario logueado es admin
-  esAdmin = signal<boolean>(false);
-  // Empleados de cine / candy: ven el acceso directo al validador
-  esEmpleado = signal<boolean>(false);
+  // Acceso al panel según permisos (admin, empleados o rol configurable)
+  private permisos = inject(PermisosService);
+  private notificacionesService = inject(NotificacionesService);
+  notificaciones = this.notificacionesService.notificaciones;
+  noLeidas = this.notificacionesService.noLeidas;
+  permisoNotificaciones = this.notificacionesService.permisoNotificaciones;
+  mensajePush = signal<string>('');
+
+  /** Solo valida QRs (empleados): acceso directo al validador. */
+  soloValidador = computed(() => {
+    const secciones = this.permisos.seccionesVisibles();
+    return secciones.length === 1 && secciones[0].ruta === '/admin/validar';
+  });
+  tienePanel = computed(() => this.permisos.tieneAccesoPanel() && !this.soloValidador());
+  totalAvisos = computed(() => this.avisos().length + this.noLeidas());
 
   constructor() {
-    // Cada vez que cambie el usuario actual, consultamos su rol en la tabla 'perfiles' de Supabase
-    effect(async () => {
+    effect(() => {
       const usuario = this.usuarioActual();
-      if (!usuario) {
-        this.esAdmin.set(false);
-        this.esEmpleado.set(false);
-        return;
-      }
-
+      const id = usuario?.id ?? null;
+      this.permisos.cargarPara(id);
+      this.notificacionesService.iniciar(id);
       // Revisamos si alguna película con alerta ya abrió la venta
-      this.alertasService.revisarAvisos();
-
-      try {
-        const { data: perfil, error } = await this.supabase
-          .from('perfiles')
-          .select('rol')
-          .eq('id', usuario.id)
-          .single();
-
-        if (error) throw error;
-
-        // Evaluamos si el rol coincide con 'admin' (igual que tu admin-guard)
-        this.esAdmin.set(perfil?.rol === 'admin');
-        this.esEmpleado.set(perfil?.rol === 'empleado_cine' || perfil?.rol === 'empleado_candy');
-      } catch (error) {
-        console.error('Error al verificar rol de admin en Navbar:', error);
-        this.esAdmin.set(false);
-      }
+      if (id) this.alertasService.revisarAvisos();
     });
   }
 
   toggleAvisos() {
     this.avisosAbiertos.update(v => !v);
+  }
+
+  async abrirNotificacion(n: Notificacion) {
+    await this.notificacionesService.marcarLeida(n);
+    this.avisosAbiertos.set(false);
+    this.cerrarMenu();
+    if (n.link) this.router.navigateByUrl(n.link);
+  }
+
+  marcarTodasLeidas() {
+    this.notificacionesService.marcarTodasLeidas();
+  }
+
+  async activarPush() {
+    this.mensajePush.set(await this.notificacionesService.activarPush());
   }
 
   async abrirAviso(peliculaId: string) {
@@ -84,7 +90,6 @@ export class NavbarComponent {
     try {
       await this.authService.cerrarSesion();
       this.cerrarMenu();
-      this.esAdmin.set(false); // Reseteamos el estado de admin al salir
       this.router.navigate(['/']);
     } catch (error) {
       console.error('Error cerrando sesión:', error);

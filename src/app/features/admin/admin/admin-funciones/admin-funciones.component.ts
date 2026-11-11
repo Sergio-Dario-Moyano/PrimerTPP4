@@ -4,6 +4,7 @@ import { DatePipe } from '@angular/common';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { FuncionesService, ResultadoProgramacion } from '../../../../core/services/funciones.service';
+import { ListaEsperaService } from '../../../../core/services/lista-espera.service';
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
 import { fechaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD } from '../../../../shared/utils/fechas';
@@ -18,7 +19,11 @@ interface FuncionListado {
   salas: { nombre: string } | null;
   peliculas: { titulo: string } | null;
   entradas: { count: number }[];
+  estado: 'activa' | 'cancelada';
+  motivo_cancelacion: string | null;
 }
+
+interface ResultadoCancelacion { compras: number; anonimas: number; total: number; }
 
 type Modo = 'unica' | 'recurrente';
 
@@ -34,6 +39,16 @@ export class AdminFuncionesComponent implements OnInit {
   private supabase = inject(SupabaseService).client;
   private funcionesService = inject(FuncionesService);
   private log = inject(LogService);
+  private listaEspera = inject(ListaEsperaService);
+
+  /** Personas en lista de espera por función (mail "RPP final"). */
+  enEspera = signal<Map<string, number>>(new Map());
+
+  // Cancelación de funciones
+  cancelandoId = signal<string | null>(null);
+  motivoCancelacion = signal<string>('');
+  procesandoCancelacion = signal<boolean>(false);
+  resultadoCancelacion = signal<string>('');
 
   readonly DIAS = [
     { valor: 1, nombre: 'Lun' }, { valor: 2, nombre: 'Mar' }, { valor: 3, nombre: 'Mié' },
@@ -79,11 +94,14 @@ export class AdminFuncionesComponent implements OnInit {
     const desde = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
     const { data, error } = await this.supabase
       .from('funciones')
-      .select('id, fecha_hora, formato, idioma, salas ( nombre ), peliculas ( titulo ), entradas ( count )')
+      .select('id, fecha_hora, formato, idioma, estado, motivo_cancelacion, salas ( nombre ), peliculas ( titulo ), entradas ( count )')
+      .neq('entradas.estado', 'cancelada')
       .gte('fecha_hora', desde)
       .order('fecha_hora');
     if (error) { console.error(error); return; }
-    this.funciones.set((data ?? []) as unknown as FuncionListado[]);
+    const funciones = (data ?? []) as unknown as FuncionListado[];
+    this.funciones.set(funciones);
+    this.enEspera.set(await this.listaEspera.conteoPorFuncion(funciones.map(f => f.id)));
   }
 
   fechaDe(f: FuncionListado): Date | null { return desdeBD(f.fecha_hora); }
@@ -148,6 +166,45 @@ export class AdminFuncionesComponent implements OnInit {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  vendidas(f: FuncionListado): number {
+    return f.entradas?.[0]?.count ?? 0;
+  }
+
+  iniciarCancelacion(f: FuncionListado): void {
+    this.cancelandoId.set(f.id);
+    this.motivoCancelacion.set('');
+    this.resultadoCancelacion.set('');
+  }
+
+  /**
+   * Cancela la función con la RPC cancelar_funcion: en UNA transacción acredita a
+   * cada comprador el total de su compra (con candy), libera las butacas, notifica
+   * y cierra la lista de espera. Si algo falla, no se aplica nada.
+   */
+  async confirmarCancelacion(f: FuncionListado): Promise<void> {
+    const motivo = this.motivoCancelacion().trim();
+    if (!motivo) { this.mensajeError.set('Indicá el motivo de la cancelación.'); return; }
+
+    this.procesandoCancelacion.set(true);
+    this.mensajeError.set('');
+    const { data, error } = await this.supabase.rpc('cancelar_funcion', { p_funcion: f.id, p_motivo: motivo });
+    this.procesandoCancelacion.set(false);
+
+    if (error) {
+      // La transacción se revirtió completa: nadie recibió crédito
+      this.mensajeError.set(`No se canceló la función (no se aplicó ningún cambio): ${error.message}`);
+      return;
+    }
+
+    const r = data as ResultadoCancelacion;
+    this.resultadoCancelacion.set(
+      `Función de "${f.peliculas?.titulo}" cancelada. ${r.compras} compra(s) afectada(s), ` +
+      `$${Math.round(r.total).toLocaleString('es-AR')} acreditados como crédito` +
+      (r.anonimas ? ` (${r.anonimas} anónima(s): el crédito se acredita cuando inicien sesión con su email).` : '.'));
+    this.cancelandoId.set(null);
+    await this.cargarFunciones();
   }
 
   async eliminar(f: FuncionListado): Promise<void> {

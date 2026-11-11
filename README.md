@@ -42,6 +42,10 @@ Trabajo Práctico N.º 1 — Programación IV.
 - **Perfil**: mis entradas, puntos y beneficios, historial de canjes, cupón de bienvenida y "Mis películas" (póster, fecha y calificación propia).
 - **Cancelación** hasta 2 horas antes de la función, con reintegro como crédito en la cuenta.
 - **Restricción de edad** (+13 / +18): los menores no pueden comprar y el ticket avisa que debe ir un adulto.
+- **Lista de espera** en funciones agotadas: si alguien cancela, el primero de la lista recibe una notificación push y tiene 15 minutos para comprar. En el perfil se ve la posición en cada lista.
+- **Propuestas de películas**: el cliente sugiere una película que no está en cartelera (una propuesta a la vez).
+- **Notificaciones** en la campanita y como push del sistema: lista de espera, función cancelada, propuestas, créditos y estrenos.
+- **Reubicación**: si el cine cancela una función, el total vuelve como crédito y la app ofrece elegir otra función de la misma película.
 
 ### Empleados
 - **Validador de QR** con la cámara o con el código escrito a mano (`TK-XXXXXX` o solo los 6 caracteres).
@@ -57,6 +61,9 @@ Trabajo Práctico N.º 1 — Programación IV.
 | ⭐ Puntos y Canjes | Costo en puntos de cada recompensa y recargo de las butacas VIP |
 | 📊 Reportes | Facturación y entradas por día, películas más vistas por semana y por mes, candy más vendido, exportación a PDF y Excel |
 | 📝 Log de Actividad | Quién creó funciones, cambió precios o validó QRs, con fecha y hora |
+| 💡 Propuestas | Ver las propuestas de los clientes; aceptar (abre el alta de película precargada) o rechazar |
+| 🔐 Roles y Permisos | Crear roles con acceso solo a ciertas secciones (ej. "solo Reportes") y asignarlos a usuarios |
+| 🗓️ Funciones (cancelar) | Cancelar una función completa de forma atómica: crédito a cada comprador, butacas liberadas, notificación y reubicación. También muestra cuánta gente hay en lista de espera |
 | 📷 Validar QRs | Validación en los dos sectores |
 
 ---
@@ -143,12 +150,21 @@ Tablas principales (PostgreSQL en Supabase):
 | `resenas` | Una por usuario y película (1 a 5 estrellas + comentario) |
 | `configuracion` | Valores editables: puntos por entrada, recargo VIP |
 | `logs_actividad` | Log del panel de administración |
+| `propuestas` | Propuestas de películas de los clientes (una pendiente por cliente) |
+| `roles` | Roles configurables con la lista de secciones permitidas (`permisos text[]`) |
+| `lista_espera` | Lista de espera por función: esperando → notificado (15 min) → compro / vencido |
+| `notificaciones` | Notificaciones de cada usuario (campanita + push) |
+| `push_suscripciones` | Dispositivos suscriptos a Web Push |
+| `creditos_pendientes` | Créditos de compras anónimas en funciones canceladas (se acreditan al iniciar sesión con ese email) |
 
 **Lógica que corre en la base de datos:**
 - `crear_perfil_usuario`: crea el perfil al registrarse.
 - `generar_codigo_ticket`: genera el código `TK-XXXXXX` de cada compra.
 - `actualizar_entradas_vendidas`: mantiene el ranking del Top 3.
 - Índice único parcial `(funcion_id, butaca_id) where estado <> 'cancelada'`: impide vender dos veces la misma butaca.
+- `cancelar_funcion(p_funcion, p_motivo)`: cancelación **atómica** de una función (ver decisión 13).
+- `procesar_listas_espera()`: vence los turnos de más de 15 minutos y avisa al siguiente de cada lista.
+- `butacas_libres(p_funcion)` y `reclamar_creditos()`.
 
 ---
 
@@ -176,7 +192,15 @@ Tablas principales (PostgreSQL en Supabase):
 
 11. **Carga diferida de librerías pesadas.** jsPDF, jspdf-autotable y ExcelJS se importan con `import()` dinámico recién cuando se exporta, así no pesan en la carga inicial.
 
-12. **Fuera de alcance.** El mapa del cine con la ubicación de la sala (mail del 30/01) no se implementó, porque el cliente aclaró que todavía no tenía luz verde.
+12. **Roles configurables.** Hay roles base (`cliente`, `empleado_cine`, `empleado_candy`, `admin`) y roles configurables (tabla `roles`), que son una lista de claves de secciones. `PermisosService` arma los permisos efectivos; `permisoGuard('reportes')` protege cada ruta y la barra lateral muestra solo lo permitido. La gestión de roles queda reservada al rol base `admin`.
+
+13. **Cancelación atómica de funciones.** No se hace desde Angular con varias llamadas, porque si una fallara quedaría a medias. Es una función PL/pgSQL (`cancelar_funcion`) que corre en una sola transacción: bloquea la función (`for update`), recorre las compras, acredita el total (lo pagado + el crédito usado, incluido el candy), descuenta los puntos ganados, cancela entradas y candy, notifica, cierra la lista de espera y registra el log. Ante cualquier error lanza una excepción y PostgreSQL revierte todo.
+
+14. **Lista de espera con turnos de 15 minutos.** La lógica vive en `procesar_listas_espera`. Cuando se liberan butacas, avisa al primero (`for update skip locked`) y le reserva una butaca hasta `vence_en`. En el mapa, las butacas reservadas no las puede tomar nadie más. Se ejecuta al cancelar una compra, al abrir el mapa o el perfil, y cada minuto con `pg_cron`.
+
+15. **Notificaciones push.** La base inserta en `notificaciones`. Con la app abierta, Supabase Realtime las muestra en la campanita y como notificación del sistema. Con la app cerrada, un Database Webhook dispara la Edge Function `enviar-push`, que manda Web Push (VAPID) a los dispositivos suscriptos con `SwPush`.
+
+16. **Fuera de alcance.** El mapa del cine con la ubicación de la sala (mail del 30/01) no se implementó, porque el cliente aclaró que todavía no tenía luz verde.
 
 ---
 
@@ -241,6 +265,17 @@ npx http-server dist/cineutnApp/browser -p 8080
 Después, en Chrome → DevTools → Application, revisar el Manifest y el Service Worker. Para probar el modo sin conexión: Network → Offline.
 
 ---
+
+## Notificaciones push (configuración)
+
+Las notificaciones funcionan siempre en la campanita y, con permiso, como notificación del sistema mientras la app está abierta. Para recibirlas **con la app cerrada** (Web Push):
+
+1. Generar las claves: `npx web-push generate-vapid-keys`.
+2. Poner la clave **pública** en `src/app/core/services/environments/environment.ts` → `vapidPublicKey`.
+3. En Supabase → Edge Functions → Secrets, cargar `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT` (ej. `mailto:admin@cinelanus.com`).
+4. Desplegar la función: `supabase functions deploy enviar-push --no-verify-jwt`, o crearla desde el Dashboard pegando `supabase/functions/enviar-push/index.ts`.
+5. En Database → Webhooks, crear uno sobre `notificaciones` (evento INSERT) que llame a la función `enviar-push`.
+6. En la app, abrir la campanita → "Activar notificaciones push" (solo funciona en el build de producción, en HTTPS).
 
 ## Deploy
 

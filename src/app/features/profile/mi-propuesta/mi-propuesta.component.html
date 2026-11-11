@@ -1,0 +1,68 @@
+<section class="seccion">
+  <h3 class="seccion__titulo">Proponer una Película</h3>
+  <p class="seccion__intro">¿Hay una película que te gustaría ver y no está en cartelera? Contanos cuál y por qué. Podés tener una propuesta pendiente a la vez.</p>
+
+  @if (cargando()) {
+    <p class="seccion__vacio">Cargando…</p>
+  } @else {
+    @if (pendiente(); as p) {
+      <article class="tarjeta tarjeta--destacada">
+        <div class="tarjeta__cabecera">
+          <h4 class="tarjeta__titulo">🎬 {{ p.titulo }}</h4>
+          <span class="etiqueta etiqueta--pendiente">En revisión</span>
+        </div>
+        <p class="tarjeta__texto">{{ p.descripcion }}</p>
+        <p class="tarjeta__texto"><strong>Por qué:</strong> {{ p.motivo }}</p>
+        <span class="tarjeta__meta">Enviada el {{ p.creado_en + 'Z' | date:'dd/MM/yyyy HH:mm' }}</span>
+        <div class="tarjeta__acciones">
+          <button type="button" class="boton boton--secundario" (click)="retirar(p)">Retirar propuesta</button>
+        </div>
+      </article>
+    } @else {
+      <form class="formulario tarjeta" [formGroup]="form" (ngSubmit)="enviar()">
+        <label>
+          Título de la película
+          <input type="text" formControlName="titulo" placeholder="Ej. El Padrino" maxlength="120">
+          @if (form.controls.titulo.touched && form.controls.titulo.invalid) {
+            <span class="formulario__error">Escribí el título.</span>
+          }
+        </label>
+        <label>
+          Descripción
+          <textarea formControlName="descripcion" [attr.maxlength]="MAX_DESCRIPCION" placeholder="De qué trata, director, año…"></textarea>
+          <span class="formulario__contador">{{ form.controls.descripcion.value.length }}/{{ MAX_DESCRIPCION }}</span>
+          @if (form.controls.descripcion.touched && form.controls.descripcion.invalid) {
+            <span class="formulario__error">Al menos 20 caracteres.</span>
+          }
+        </label>
+        <label>
+          ¿Por qué la querés ver en el cine?
+          <textarea formControlName="motivo" [attr.maxlength]="MAX_MOTIVO" placeholder="Contanos por qué te gustaría verla en pantalla grande"></textarea>
+          <span class="formulario__contador">{{ form.controls.motivo.value.length }}/{{ MAX_MOTIVO }}</span>
+          @if (form.controls.motivo.touched && form.controls.motivo.invalid) {
+            <span class="formulario__error">Al menos 20 caracteres.</span>
+          }
+        </label>
+        <button type="submit" class="boton" [disabled]="enviando()">{{ enviando() ? 'Enviando…' : 'Enviar propuesta' }}</button>
+      </form>
+    }
+
+    @if (exito()) { <p class="tarjeta__texto" style="color:#4ade80; text-align:center;">{{ exito() }}</p> }
+    @if (error()) { <p class="formulario__error" style="text-align:center;">{{ error() }}</p> }
+
+    @if (anteriores().length) {
+      <h4 class="tarjeta__titulo">Tus propuestas anteriores</h4>
+      @for (p of anteriores(); track p.id) {
+        <article class="tarjeta">
+          <div class="tarjeta__cabecera">
+            <h4 class="tarjeta__titulo">{{ p.titulo }}</h4>
+            <span class="etiqueta" [class]="'etiqueta etiqueta--' + p.estado">{{ p.estado }}</span>
+          </div>
+          @if (p.respuesta) { <p class="tarjeta__texto"><strong>Respuesta del cine:</strong> {{ p.respuesta }}</p> }
+          @if (p.pelicula_id) { <a class="boton" [routerLink]="['/pelicula', p.pelicula_id]">Ver la película</a> }
+          <span class="tarjeta__meta">{{ p.creado_en + 'Z' | date:'dd/MM/yyyy' }}</span>
+        </article>
+      }
+    }
+  }
+</section>

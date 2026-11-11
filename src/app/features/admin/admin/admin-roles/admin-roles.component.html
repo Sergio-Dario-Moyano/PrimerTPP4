@@ -1,0 +1,114 @@
+<div class="admin-container">
+  <h2>Roles y Permisos</h2>
+  <p class="admin-sub">
+    Creá roles que habiliten solo algunas secciones del panel (por ejemplo, "solo Reportes") y asignáselos a usuarios.
+    El rol base <strong>Administrador</strong> siempre tiene acceso total y es el único que ve esta sección.
+  </p>
+
+  @if (mensajeExito()) { <div class="alert success">{{ mensajeExito() }}</div> }
+  @if (mensajeError()) { <div class="alert error">{{ mensajeError() }}</div> }
+
+  <!-- Alta / edición de rol -->
+  <form [formGroup]="form" (ngSubmit)="guardarRol()" class="admin-form">
+    <h3>{{ editando() ? 'Editando rol: ' + editando()!.nombre : 'Nuevo rol' }}</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="rol-nombre">Nombre</label>
+        <input id="rol-nombre" type="text" formControlName="nombre" placeholder="Ej. Analista de reportes">
+      </div>
+      <div class="form-group">
+        <label for="rol-desc">Descripción</label>
+        <input id="rol-desc" type="text" formControlName="descripcion" placeholder="Para qué es este rol">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Secciones a las que accede</label>
+      <div class="permisos-grid">
+        @for (s of SECCIONES; track s.clave) {
+          <label class="checkbox-label permiso">
+            <input type="checkbox" [checked]="permisosElegidos().includes(s.clave)" (change)="togglePermiso(s.clave)">
+            {{ s.icono }} {{ s.titulo }}
+          </label>
+        }
+      </div>
+    </div>
+    <div class="admin-form__acciones">
+      <button type="submit">{{ editando() ? 'Guardar cambios' : 'Crear rol' }}</button>
+      @if (editando()) { <button type="button" class="admin-btn admin-btn--secundario" (click)="cancelar()">Cancelar</button> }
+    </div>
+  </form>
+
+  <div class="listado-seccion">
+    <h3>Roles configurables</h3>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Rol</th><th>Secciones</th><th></th></tr></thead>
+        <tbody>
+          @for (r of roles(); track r.id) {
+            <tr [class.fila-editando]="editando()?.id === r.id">
+              <td><strong>{{ r.nombre }}</strong>@if (r.descripcion) { <br><small>{{ r.descripcion }}</small> }</td>
+              <td>
+                @for (p of r.permisos; track p) { <span class="badge proximamente" style="margin: 2px;">{{ nombrePermiso()(p) }}</span> }
+              </td>
+              <td class="acciones">
+                <button type="button" class="btn-toggle" (click)="editar(r)">Editar</button>
+                <button type="button" class="btn-toggle btn-toggle--peligro" (click)="eliminarRol(r)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="3" class="empty">Todavía no hay roles configurables.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Asignación a usuarios -->
+  <div class="listado-seccion">
+    <h3>Asignar a un usuario</h3>
+    <div class="filtros-tabla">
+      <input type="search" placeholder="Buscar por email, nombre o apellido…" [value]="busqueda()"
+             (input)="busqueda.set($any($event.target).value)" (keyup.enter)="buscar()">
+      <button type="button" class="admin-btn" style="flex: 0 0 auto; margin: 0;" (click)="buscar()">Buscar</button>
+    </div>
+
+    <ng-template #filaUsuario let-u>
+      <tr>
+        <td><strong>{{ u.nombre }} {{ u.apellido }}</strong><br><small>{{ u.email }}</small></td>
+        <td>
+          <select [value]="u.rol" (change)="onRolBase(u, $event)" aria-label="Rol base">
+            @for (r of ROLES_BASE; track r.valor) { <option [value]="r.valor" [selected]="r.valor === u.rol">{{ r.etiqueta }}</option> }
+          </select>
+        </td>
+        <td>
+          <select (change)="onRolConfig(u, $event)" aria-label="Rol configurable">
+            <option value="" [selected]="!u.rol_id">Sin rol extra</option>
+            @for (r of roles(); track r.id) { <option [value]="r.id" [selected]="r.id === u.rol_id">{{ r.nombre }}</option> }
+          </select>
+        </td>
+      </tr>
+    </ng-template>
+
+    @if (resultados().length) {
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Usuario</th><th>Rol base</th><th>Rol configurable</th></tr></thead>
+          <tbody>
+            @for (u of resultados(); track u.id) { <ng-container *ngTemplateOutlet="filaUsuario; context: { $implicit: u }" /> }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <h3 style="margin-top: 1.5rem;">Usuarios con permisos en el panel</h3>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr><th>Usuario</th><th>Rol base</th><th>Rol configurable</th></tr></thead>
+        <tbody>
+          @for (u of conRol(); track u.id) { <ng-container *ngTemplateOutlet="filaUsuario; context: { $implicit: u }" /> }
+          @empty { <tr><td colspan="3" class="empty">Nadie tiene permisos todavía.</td></tr> }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

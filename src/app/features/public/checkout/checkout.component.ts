@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { ReservaService } from '../../../core/services/reserva.service';
 import { SupabaseService } from '../../../core/services/supabase';
 import { ModalService } from '../../../core/services/modal.service';
+import { ListaEsperaService } from '../../../core/services/lista-espera.service';
 
 import { CompraInsert } from '../../../core/models/Compra.model';
 import { EntradaInsert } from '../../../core/models/Entrada.model';
@@ -42,6 +43,7 @@ export class CheckoutComponent implements OnInit {
   private router = inject(Router);
   private supabase = inject(SupabaseService).client;
   private modalService = inject(ModalService);
+  private listaEspera = inject(ListaEsperaService);
 
   checkoutForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -128,6 +130,8 @@ export class CheckoutComponent implements OnInit {
 
     if (perfil) {
       this.perfil.set(perfil as PerfilCheckout);
+      // Reubicación por función cancelada: el crédito se aplica de entrada
+      if (this.reservaService.reubicacion() && Number(perfil.credito_favor) > 0) this.usarCredito.set(true);
       this.checkoutForm.patchValue({ nombre: `${perfil.nombre} ${perfil.apellido}`.trim() });
     }
   }
@@ -297,6 +301,9 @@ export class CheckoutComponent implements OnInit {
           entradas_gratis: (perfil.entradas_gratis ?? 0) - this.entradasGratisAUsar()
         }).eq('id', usuarioId);
       }
+
+      // Si estaba en la lista de espera de esta función, sale de la lista (y libera su reserva)
+      if (usuarioId && funcionId) await this.listaEspera.marcarCompra(funcionId, usuarioId);
 
       this.checkoutForm.reset();
       this.cuponControl.reset();

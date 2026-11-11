@@ -8,6 +8,7 @@ import { jsPDF } from 'jspdf';
 import { SupabaseService } from '../../../core/services/supabase';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModalService } from '../../../core/services/modal.service';
+import { ListaEsperaService } from '../../../core/services/lista-espera.service';
 
 import { CompraData } from '../../../core/models/CompraData.model';
 import { EntradaData } from '../../../core/models/EntradaData.model';
@@ -27,6 +28,7 @@ export class TicketComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
   private modalService = inject(ModalService);
+  private listaEspera = inject(ListaEsperaService);
 
   cargando = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -319,6 +321,10 @@ export class TicketComponent implements OnInit {
           puntos_fidelizacion: Math.max(0, (perfil.puntos_fidelizacion ?? 0) - (datosCompra.puntos_ganados ?? 0))
         }).eq('id', datosCompra.perfil_id!);
       }
+
+      // Se liberaron butacas: si la función tiene lista de espera, se avisa al primero (15 min)
+      const funcionId = this.entradas()[0]?.funcion_id;
+      if (funcionId) await this.listaEspera.procesar(funcionId);
 
       this.modalService.open('Cancelación exitosa',
         `Tus entradas fueron canceladas. Se acreditaron $${reintegro.toLocaleString('es-AR')} de crédito en tu cuenta para tu próxima compra.`,

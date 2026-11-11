@@ -17,6 +17,7 @@
     "@angular/forms": "^22.1.0",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "@angular/service-worker": "^22.2.1",
     "@supabase/supabase-js": "^2.119.0",
     "angularx-qrcode": "^22.0.1",
     "chart.js": "^4.6.1",
@@ -38,4 +39,3 @@
     "vitest": "^4.0.8"
   }
 }
-

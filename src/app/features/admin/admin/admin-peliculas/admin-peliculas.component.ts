@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { ImageDropzoneComponent } from '../../../../shared/components/image-dropzone/image-dropzone.component';
@@ -42,6 +43,11 @@ export class AdminPeliculasComponent implements OnInit {
   private fb = inject(FormBuilder);
   private supabase = inject(SupabaseService).client;
   private log = inject(LogService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /** Propuesta de un cliente desde la que se está creando la película. */
+  propuesta = signal<{ id: string; titulo: string; perfil_id: string; autor: string } | null>(null);
 
   readonly DIAS_PREVENTA = DIAS_PREVENTA;
 
@@ -70,6 +76,53 @@ export class AdminPeliculasComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.cargarGeneros(), this.cargarPeliculas()]);
+
+    const propuestaId = this.route.snapshot.queryParamMap.get('propuesta');
+    if (propuestaId) await this.cargarPropuesta(propuestaId);
+  }
+
+  /** Precarga el formulario con lo que envió el cliente. */
+  private async cargarPropuesta(id: string): Promise<void> {
+    const { data } = await this.supabase
+      .from('propuestas')
+      .select('id, titulo, descripcion, perfil_id, estado, perfiles!propuestas_perfil_id_fkey ( nombre, apellido )')
+      .eq('id', id)
+      .single();
+    if (!data || data.estado !== 'pendiente') {
+      this.mensajeError.set('La propuesta ya no está pendiente.');
+      return;
+    }
+    const autor = data.perfiles as unknown as { nombre: string; apellido: string } | null;
+    this.propuesta.set({
+      id: data.id, titulo: data.titulo, perfil_id: data.perfil_id,
+      autor: autor ? `${autor.nombre} ${autor.apellido}`.trim() : 'un cliente'
+    });
+    this.form.patchValue({ titulo: data.titulo, sinopsis: data.descripcion, estado: 'proximamente' });
+  }
+
+  descartarPropuesta(): void {
+    this.propuesta.set(null);
+    this.form.reset();
+    this.router.navigate([], { queryParams: {} });
+  }
+
+  /** Al crear la película, la propuesta queda aceptada y se avisa al cliente. */
+  private async cerrarPropuesta(peliculaId: string, titulo: string): Promise<void> {
+    const p = this.propuesta();
+    if (!p) return;
+    const { data: auth } = await this.supabase.auth.getUser();
+    await this.supabase.from('propuestas').update({
+      estado: 'aceptada', pelicula_id: peliculaId,
+      respuesta: '¡La sumamos! Pronto la vas a ver en cartelera.',
+      revisado_por: auth?.user?.id ?? null, revisado_en: new Date().toISOString()
+    }).eq('id', p.id);
+    await this.supabase.from('notificaciones').insert({
+      perfil_id: p.perfil_id, tipo: 'propuesta', titulo: '¡Aceptamos tu propuesta!',
+      mensaje: `Vamos a proyectar "${titulo}". Gracias por la sugerencia.`, link: `/pelicula/${peliculaId}`
+    });
+    await this.log.registrar('ACEPTAR_PROPUESTA', 'propuestas', p.id, `Se aceptó la propuesta de ${p.autor}: "${titulo}"`);
+    this.propuesta.set(null);
+    this.router.navigate([], { queryParams: {} });
   }
 
   async cargarGeneros(): Promise<void> {
@@ -180,6 +233,7 @@ export class AdminPeliculasComponent implements OnInit {
         peliculaId = data.id;
         await this.log.registrar('CREAR_PELICULA', 'peliculas', peliculaId,
           `Se creó la película "${payload.titulo}" (${payload.estado}) a $${payload.precio_base}`);
+        await this.cerrarPropuesta(peliculaId, payload.titulo);
       }
 
       // Géneros: se reemplazan todas las relaciones

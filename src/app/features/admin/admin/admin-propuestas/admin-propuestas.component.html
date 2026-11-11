@@ -1,0 +1,49 @@
+<div class="admin-container">
+  <h2>Propuestas de Películas</h2>
+  <p class="admin-sub">Películas que piden los clientes. Al aceptar una, se abre el alta de película con los datos de la propuesta.</p>
+
+  <div class="generos-grid" style="margin-bottom: 1rem;">
+    <button type="button" class="genero-chip" [class.selected]="filtro() === 'pendiente'" (click)="filtro.set('pendiente')">Pendientes ({{ contador().pendiente }})</button>
+    <button type="button" class="genero-chip" [class.selected]="filtro() === 'aceptada'" (click)="filtro.set('aceptada')">Aceptadas ({{ contador().aceptada }})</button>
+    <button type="button" class="genero-chip" [class.selected]="filtro() === 'rechazada'" (click)="filtro.set('rechazada')">Rechazadas ({{ contador().rechazada }})</button>
+    <button type="button" class="genero-chip" [class.selected]="filtro() === 'todas'" (click)="filtro.set('todas')">Todas</button>
+  </div>
+
+  @if (mensaje()) { <div class="alert success">{{ mensaje() }}</div> }
+
+  <div class="propuestas-lista">
+    @for (p of filtradas(); track p.id) {
+      <article class="admin-form propuesta">
+        <div class="propuesta__cabecera">
+          <h3>🎬 {{ p.titulo }}</h3>
+          <span class="badge" [class.proximamente]="p.estado === 'pendiente'" [class.activo]="p.estado === 'aceptada'" [class.inactivo]="p.estado === 'rechazada'">{{ p.estado }}</span>
+        </div>
+        <p class="form-ayuda">Propuesta de <strong>{{ autor(p) }}</strong> ({{ p.perfiles?.email }}) · {{ p.creado_en + 'Z' | date:'dd/MM/yyyy HH:mm' }}</p>
+        <p><strong>Descripción:</strong> {{ p.descripcion }}</p>
+        <p><strong>Por qué la quiere:</strong> {{ p.motivo }}</p>
+        @if (p.respuesta) { <p class="form-ayuda"><strong>Respuesta:</strong> {{ p.respuesta }}</p> }
+
+        @if (p.estado === 'pendiente') {
+          @if (rechazando() === p.id) {
+            <div class="form-group">
+              <label [for]="'resp-' + p.id">Motivo del rechazo (lo ve el cliente)</label>
+              <textarea [id]="'resp-' + p.id" [value]="respuesta()" (input)="respuesta.set($any($event.target).value)"
+                        placeholder="Ej. No tenemos los derechos de exhibición por ahora."></textarea>
+            </div>
+            <div class="admin-form__acciones">
+              <button type="button" class="admin-btn" style="background:#ef4444; color:#fff;" (click)="confirmarRechazo(p)">Confirmar rechazo</button>
+              <button type="button" class="admin-btn admin-btn--secundario" (click)="rechazando.set(null)">Cancelar</button>
+            </div>
+          } @else {
+            <div class="admin-form__acciones">
+              <button type="button" class="admin-btn" (click)="aceptar(p)">✅ Aceptar y crear película</button>
+              <button type="button" class="admin-btn admin-btn--secundario" (click)="iniciarRechazo(p)">Rechazar</button>
+            </div>
+          }
+        }
+      </article>
+    } @empty {
+      <p class="empty">No hay propuestas en este estado.</p>
+    }
+  </div>
+</div>

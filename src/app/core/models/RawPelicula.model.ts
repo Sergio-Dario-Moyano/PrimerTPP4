@@ -18,5 +18,5 @@ export interface RawPelicula {
   // Este campo no está en la tabla física, pero llega
   // cuando hacemos un JOIN (select) con la tabla de géneros
   pelicula_genero?: { generos: { nombre: string } }[];
-  funciones?: { formato: string; idioma: string; fecha_hora: string }[];
+  funciones?: { formato: string; idioma: string; fecha_hora: string; estado?: string }[];
 }

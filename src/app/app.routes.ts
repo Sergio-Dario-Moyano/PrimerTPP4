@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
-import { adminGuard, rolGuard, ROLES_STAFF } from './core/guards/admin-guard-guard';
+import { permisoGuard, panelGuard } from './core/guards/admin-guard-guard';
 
 export const routes: Routes = [
   {
@@ -67,6 +67,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/profile/mis-peliculas/mis-peliculas.component').then(m => m.MisPeliculasComponent)
       },
       {
+        path: 'espera',
+        loadComponent: () => import('./features/profile/listas-espera/listas-espera.component').then(m => m.ListasEsperaComponent)
+      },
+      {
+        path: 'propuesta',
+        loadComponent: () => import('./features/profile/mi-propuesta/mi-propuesta.component').then(m => m.MiPropuestaComponent)
+      },
+      {
         path: 'cupones',
         loadComponent: () => import('./features/profile/cupon-bienvenida/cupon-bienvenida.component').then(m => m.CuponBienvenidaComponent)
       }
@@ -76,47 +84,57 @@ export const routes: Routes = [
     path: 'admin',
     loadComponent: () => import('./features/admin/admin/admin.component').then(m => m.AdminComponent),
     // Admin y empleados entran al panel; cada sección define quién puede verla
-    canActivate: [authGuard, rolGuard(...ROLES_STAFF)],
+    canActivate: [authGuard, panelGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'peliculas' },
       {
         path: 'peliculas',
-        canActivate: [adminGuard],
+        canActivate: [permisoGuard('peliculas')],
         loadComponent: () => import('./features/admin/admin/admin-peliculas/admin-peliculas.component').then(m => m.AdminPeliculasComponent)
       },
       {
         path: 'funciones',
-        canActivate: [adminGuard],
+        canActivate: [permisoGuard('funciones')],
         loadComponent: () => import('./features/admin/admin/admin-funciones/admin-funciones.component').then(m => m.AdminFuncionesComponent)
       },
       {
         path: 'candy',
-        canActivate: [adminGuard],
+        canActivate: [permisoGuard('candy')],
         loadComponent: () => import('./features/admin/admin/admin-candy/admin-candy.component').then(m => m.AdminCandyComponent)
       },
       {
         path: 'cupones',
-        canActivate: [adminGuard],
+        canActivate: [permisoGuard('cupones')],
         loadComponent: () => import('./features/admin/admin/admin-cupones/admin-cupones.component').then(m => m.AdminCuponesComponent)
       },
       {
         path: 'fidelizacion',
-        canActivate: [adminGuard],
+        canActivate: [permisoGuard('fidelizacion')],
         loadComponent: () => import('./features/admin/admin/admin-fidelizacion/admin-fidelizacion.component').then(m => m.AdminFidelizacionComponent)
       },
       {
+        path: 'propuestas',
+        canActivate: [permisoGuard('propuestas')],
+        loadComponent: () => import('./features/admin/admin/admin-propuestas/admin-propuestas.component').then(m => m.AdminPropuestasComponent)
+      },
+      {
         path: 'reportes',
-        canActivate: [adminGuard],
+        canActivate: [permisoGuard('reportes')],
         loadComponent: () => import('./features/admin/admin/admin-reportes/admin-reportes.component').then(m => m.AdminReportesComponent)
       },
       {
         path: 'log',
-        canActivate: [adminGuard],
+        canActivate: [permisoGuard('log')],
         loadComponent: () => import('./features/admin/admin/admin-log/admin-log.component').then(m => m.AdminLogComponent)
       },
       {
+        path: 'roles',
+        canActivate: [permisoGuard('roles')],
+        loadComponent: () => import('./features/admin/admin/admin-roles/admin-roles.component').then(m => m.AdminRolesComponent)
+      },
+      {
         path: 'validar',
-        canActivate: [rolGuard(...ROLES_STAFF)],
+        canActivate: [permisoGuard('validar_sala', 'validar_candy')],
         loadComponent: () => import('./features/admin/admin/validar-qr/validar-qr.component').then(m => m.ValidarQrComponent)
       }
     ]
@@ -126,6 +144,7 @@ export const routes: Routes = [
     redirectTo: 'home'
   }
 ];
+
 
 
 

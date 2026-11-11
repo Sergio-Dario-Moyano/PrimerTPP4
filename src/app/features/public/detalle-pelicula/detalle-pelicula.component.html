@@ -47,6 +47,12 @@
     <div class="l-container detalle-cuerpo">
 
       <!-- Detalle de los horarios -->
+      @if (reubicando()) {
+        <p class="aviso-preventa aviso-reubicacion">
+          🔄 <strong>Tu función fue cancelada.</strong> Tenés <strong>${{ creditoDisponible() | number:'1.0-0' }}</strong> de crédito en tu cuenta:
+          elegí otra función de esta película y se aplica solo al pagar.
+        </p>
+      }
       @if (ventaAbierta()) {
         @if (esPreventa()) {
           <p class="aviso-preventa">🎟️ <strong>Preventa abierta:</strong> comprá ahora con precio especial.</p>

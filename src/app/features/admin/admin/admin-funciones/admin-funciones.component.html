@@ -76,6 +76,7 @@
   </form>
 
   @if (mensajeError()) { <div class="alert error">{{ mensajeError() }}</div> }
+  @if (resultadoCancelacion()) { <div class="alert success">{{ resultadoCancelacion() }}</div> }
 
   @if (resultado(); as r) {
     @if (r.creadas.length) {
@@ -110,22 +111,53 @@
     </div>
     <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>Fecha</th><th>Película</th><th>Sala</th><th>Formato</th><th>Vendidas</th><th></th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Película</th><th>Sala</th><th>Formato</th><th>Vendidas</th><th>En espera</th><th></th></tr></thead>
         <tbody>
           @for (f of funcionesFiltradas(); track f.id) {
-            <tr>
+            <tr [class.fila-cancelada]="f.estado === 'cancelada'">
               <td>{{ fechaDe(f) | date:'EEE dd/MM HH:mm' }}</td>
-              <td>{{ f.peliculas?.titulo }}</td>
+              <td>{{ f.peliculas?.titulo }}
+                @if (f.estado === 'cancelada') { <br><span class="badge inactivo">Cancelada</span> <small>{{ f.motivo_cancelacion }}</small> }
+              </td>
               <td>{{ f.salas?.nombre }}</td>
               <td>{{ f.formato }} · {{ f.idioma }}</td>
-              <td>{{ f.entradas?.[0]?.count ?? 0 }}</td>
+              <td>{{ vendidas(f) }}</td>
               <td>
-                <button type="button" class="btn-toggle btn-toggle--peligro" (click)="eliminar(f)"
-                        [disabled]="(f.entradas?.[0]?.count ?? 0) > 0">Eliminar</button>
+                @if (enEspera().get(f.id); as n) { <span class="badge proximamente">{{ n }} 👥</span> } @else { — }
+              </td>
+              <td class="acciones">
+                @if (f.estado === 'activa') {
+                  @if (vendidas(f) === 0) {
+                    <button type="button" class="btn-toggle btn-toggle--peligro" (click)="eliminar(f)">Eliminar</button>
+                  }
+                  <button type="button" class="btn-toggle btn-toggle--peligro" (click)="iniciarCancelacion(f)">Cancelar función</button>
+                }
               </td>
             </tr>
+            @if (cancelandoId() === f.id) {
+              <tr class="fila-editando">
+                <td colspan="7">
+                  <div class="cancelacion">
+                    <strong>⚠️ Cancelar la función de "{{ f.peliculas?.titulo }}" ({{ fechaDe(f) | date:'dd/MM HH:mm' }})</strong>
+                    <span class="form-ayuda">
+                      Las {{ vendidas(f) }} entrada(s) vendidas pasan a crédito en la cuenta de cada comprador (el total de su compra, incluido el candy),
+                      las butacas se liberan y cada comprador recibe una notificación para elegir otra función. Es todo o nada.
+                    </span>
+                    <input type="text" placeholder="Motivo (lo ven los clientes). Ej. Falla técnica en el proyector"
+                           [value]="motivoCancelacion()" (input)="motivoCancelacion.set($any($event.target).value)">
+                    <div class="admin-form__acciones">
+                      <button type="button" class="admin-btn" style="background:#ef4444; color:#fff;"
+                              [disabled]="procesandoCancelacion()" (click)="confirmarCancelacion(f)">
+                        {{ procesandoCancelacion() ? 'Cancelando…' : 'Confirmar cancelación' }}
+                      </button>
+                      <button type="button" class="admin-btn admin-btn--secundario" (click)="cancelandoId.set(null)">Volver</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
           } @empty {
-            <tr><td colspan="6" class="empty">No hay funciones programadas.</td></tr>
+            <tr><td colspan="7" class="empty">No hay funciones programadas.</td></tr>
           }
         </tbody>
       </table>

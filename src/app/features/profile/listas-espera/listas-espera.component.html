@@ -1,0 +1,48 @@
+<section class="seccion">
+  <h3 class="seccion__titulo">Listas de Espera</h3>
+  <p class="seccion__intro">Cuando una función está agotada podés anotarte desde el mapa de butacas. Si alguien cancela, el primero de la lista recibe una notificación y tiene 15 minutos para comprar.</p>
+
+  @if (cargando()) {
+    <p class="seccion__vacio">Cargando…</p>
+  } @else {
+    @for (l of activas(); track l.id) {
+      <article class="tarjeta" [class.tarjeta--destacada]="l.estado === 'notificado'">
+        <div class="tarjeta__cabecera">
+          <h4 class="tarjeta__titulo">🎬 {{ l.funcion.peliculas?.titulo }}</h4>
+          <span [class]="'etiqueta etiqueta--' + l.estado">{{ ETIQUETAS[l.estado] }}</span>
+        </div>
+        <span class="tarjeta__meta">{{ fecha(l) | date:"EEEE d 'de' MMMM, HH:mm" }} · {{ l.funcion.salas?.nombre }}</span>
+
+        @if (l.estado === 'notificado') {
+          <p class="tarjeta__texto">Se liberó una butaca para vos. Te quedan <span class="cuenta-regresiva">{{ textoReloj(l) }}</span> para comprar.</p>
+          <div class="tarjeta__acciones">
+            <button type="button" class="boton" (click)="comprar(l)">Comprar ahora</button>
+            <button type="button" class="boton boton--secundario" (click)="salir(l)">No la quiero</button>
+          </div>
+        } @else {
+          <div class="tarjeta__cabecera">
+            <span class="tarjeta__texto">Tu posición en la lista</span>
+            <span class="posicion">#{{ l.posicion }}</span>
+          </div>
+          <div class="tarjeta__acciones">
+            <button type="button" class="boton boton--secundario" (click)="salir(l)">Salir de la lista</button>
+          </div>
+        }
+      </article>
+    } @empty {
+      <p class="seccion__vacio">No estás anotado en ninguna lista de espera.</p>
+    }
+
+    @if (historial().length) {
+      <h4 class="tarjeta__titulo">Historial</h4>
+      @for (l of historial(); track l.id) {
+        <article class="tarjeta">
+          <div class="tarjeta__cabecera">
+            <span class="tarjeta__texto"><strong>{{ l.funcion.peliculas?.titulo }}</strong> · {{ fecha(l) | date:'dd/MM HH:mm' }}</span>
+            <span [class]="'etiqueta etiqueta--' + l.estado">{{ ETIQUETAS[l.estado] }}</span>
+          </div>
+        </article>
+      }
+    }
+  }
+</section>

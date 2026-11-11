@@ -41,12 +41,11 @@
         }
 
         <!-- Botón visible solo si el usuario es administrador -->
-        @if (esAdmin()) {
+        @if (tienePanel()) {
           <a routerLink="/admin" routerLinkActive="navbar__link--active" class="navbar__link navbar__link--admin" (click)="cerrarMenu()">
             ⚙️ Panel Admin
           </a>
-        }
-        @if (esEmpleado()) {
+        } @else if (soloValidador()) {
           <a routerLink="/admin/validar" routerLinkActive="navbar__link--active" class="navbar__link navbar__link--admin" (click)="cerrarMenu()">
             📷 Validar Entradas
           </a>
@@ -57,19 +56,41 @@
         @if (usuarioActual()) {
           <div class="navbar__avisos">
             <button type="button" class="navbar__campana" (click)="toggleAvisos()"
-                    [attr.aria-label]="'Avisos de estreno: ' + avisos().length">
+                    [attr.aria-label]="'Notificaciones: ' + totalAvisos()">
               🔔
-              @if (avisos().length > 0) { <span class="navbar__campana-badge">{{ avisos().length }}</span> }
+              @if (totalAvisos() > 0) { <span class="navbar__campana-badge">{{ totalAvisos() }}</span> }
             </button>
             @if (avisosAbiertos()) {
               <div class="navbar__avisos-panel">
+                <div class="navbar__avisos-cabecera">
+                  <strong>Notificaciones</strong>
+                  @if (noLeidas() > 0) {
+                    <button type="button" class="navbar__avisos-accion" (click)="marcarTodasLeidas()">Marcar todo leído</button>
+                  }
+                </div>
+
+                @if (permisoNotificaciones() !== 'granted') {
+                  <button type="button" class="navbar__push" (click)="activarPush()">📲 Activar notificaciones push</button>
+                }
+                @if (mensajePush()) { <p class="navbar__avisos-vacio">{{ mensajePush() }}</p> }
+
                 @for (a of avisos(); track a.pelicula_id) {
-                  <button type="button" class="navbar__aviso" (click)="abrirAviso(a.pelicula_id)">
+                  <button type="button" class="navbar__aviso navbar__aviso--nueva" (click)="abrirAviso(a.pelicula_id)">
                     <img [src]="a.url_imagen" alt="">
                     <span>¡Ya están a la venta las entradas de <strong>{{ a.titulo }}</strong>!</span>
                   </button>
-                } @empty {
-                  <p class="navbar__avisos-vacio">No tenés avisos nuevos. Activá alertas en <em>Próximamente</em>.</p>
+                }
+                @for (n of notificaciones(); track n.id) {
+                  <button type="button" class="navbar__aviso" [class.navbar__aviso--nueva]="!n.leida" (click)="abrirNotificacion(n)">
+                    <span class="navbar__aviso-texto">
+                      <strong>{{ n.titulo }}</strong>
+                      <span>{{ n.mensaje }}</span>
+                      <small>{{ n.creado_en + 'Z' | date:'dd/MM HH:mm' }}</small>
+                    </span>
+                  </button>
+                }
+                @if (avisos().length === 0 && notificaciones().length === 0) {
+                  <p class="navbar__avisos-vacio">No tenés notificaciones. Activá alertas en <em>Próximamente</em>.</p>
                 }
               </div>
             }

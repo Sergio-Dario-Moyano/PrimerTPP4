@@ -8,6 +8,7 @@ import { PeliculaService } from '../../../core/services/pelicula.service';
 import { SupabaseService } from '../../../core/services/supabase';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModalService } from '../../../core/services/modal.service';
+import { ListaEsperaService, EstadoEsperaFuncion, desdeUtc } from '../../../core/services/lista-espera.service';
 
 import { Pelicula } from '../../../core/models/Pelicula.model';
 import { ResumenCompraComponent } from '../../../shared/components/resumen-compra/resumen-compra.component';
@@ -34,6 +35,7 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   private supabaseService = inject(SupabaseService);
   private authService = inject(AuthService);
   private modalService = inject(ModalService);
+  private listaEspera = inject(ListaEsperaService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -59,6 +61,30 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   funcionIdReal = signal<string | null>(null);
 
   seats = signal<Seat[]>([]);
+
+  // ----- Lista de espera (mail "RPP final") -----
+  funcionCancelada = signal<string | null>(null);
+  espera = signal<EstadoEsperaFuncion | null>(null);
+  procesandoEspera = signal<boolean>(false);
+  private ahora = signal<number>(Date.now());
+  private reloj: ReturnType<typeof setInterval> | null = null;
+  private refrescoPendiente: ReturnType<typeof setTimeout> | null = null;
+
+  /** Butacas que no están vendidas (libres o elegidas por mí). */
+  libres = computed(() => this.seats().filter(s => s.status !== 'occupied').length);
+  /** Libres menos las reservadas a otras personas avisadas de la lista. */
+  disponibles = computed(() => Math.max(0, this.libres() - (this.espera()?.reservadas ?? 0)));
+  miLugar = computed(() => this.espera()?.miLugar ?? null);
+  esMiTurno = computed(() => this.miLugar()?.estado === 'notificado');
+  agotada = computed(() => !this.cargando() && this.seats().length > 0 && this.disponibles() === 0);
+  segundosRestantes = computed(() => {
+    const vence = this.miLugar()?.vence_en;
+    return vence ? Math.max(0, Math.floor((desdeUtc(vence).getTime() - this.ahora()) / 1000)) : 0;
+  });
+  cuentaRegresiva = computed(() => {
+    const s = this.segundosRestantes();
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  });
   cargando = signal<boolean>(true);
 
   modalEdadAbierto = signal<boolean>(false);
@@ -132,6 +158,8 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.reloj) clearInterval(this.reloj);
+    if (this.refrescoPendiente) clearTimeout(this.refrescoPendiente);
     if (this.realtimeChannel) {
       this.supabaseService.client.removeChannel(this.realtimeChannel);
     }
@@ -152,6 +180,10 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
       if (errFuncion || !funcionDB) throw new Error('Función no encontrada');
       const funcion = funcionDB as RawFuncion;
+
+      if (funcionDB.estado === 'cancelada') {
+        this.funcionCancelada.set(funcionDB.motivo_cancelacion || 'Problemas técnicos');
+      }
 
       this.funcionIdReal.set(funcion.id);
       this.peliculaId.set(funcion.pelicula_id);
@@ -197,6 +229,13 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
       this.seats.set(allSeats);
       this.suscribirAsientosEnTiempoReal();
+      await this.refrescarEspera();
+      this.reloj = setInterval(() => {
+        this.ahora.set(Date.now());
+        // Al vencer mi turno (o el de otro) se recalcula la lista
+        const vence = this.miLugar()?.vence_en;
+        if (vence && desdeUtc(vence).getTime() < Date.now()) this.refrescarEspera();
+      }, 1000);
 
     } catch (error) {
       console.error('Error sincronizando la grilla con BD:', error);
@@ -289,6 +328,7 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
         (payload: unknown) => {
           const evt = payload as any;
           const funcionReal = this.funcionIdReal();
+          if (evt.new?.funcion_id === funcionReal || evt.old?.funcion_id === funcionReal) this.programarRefrescoEspera();
 
           if (evt.eventType === 'INSERT' && evt.new?.funcion_id === funcionReal) {
             if (evt.new.estado !== 'cancelada') {
@@ -324,7 +364,60 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
     ));
   }
 
+  /** Procesa la lista (vence turnos, avisa al siguiente) y trae su estado. */
+  async refrescarEspera(): Promise<void> {
+    const funcionId = this.funcionIdReal();
+    if (!funcionId) return;
+    await this.listaEspera.procesar(funcionId);
+    this.espera.set(await this.listaEspera.estadoFuncion(funcionId, this.authService.usuarioActual()?.id ?? null));
+  }
+
+  /** Varios cambios seguidos en tiempo real → un solo refresco. */
+  private programarRefrescoEspera(): void {
+    if (this.refrescoPendiente) clearTimeout(this.refrescoPendiente);
+    this.refrescoPendiente = setTimeout(() => this.refrescarEspera(), 800);
+  }
+
+  async anotarmeEnEspera(): Promise<void> {
+    const user = this.authService.usuarioActual();
+    if (!user) {
+      this.modalService.open('Iniciá sesión', 'La lista de espera es para usuarios registrados.', 'info');
+      this.router.navigate(['/login']);
+      return;
+    }
+    this.procesandoEspera.set(true);
+    try {
+      await this.listaEspera.anotarme(this.funcionIdReal()!, user.id);
+      await this.refrescarEspera();
+      this.modalService.open('¡Te anotaste!',
+        'Si alguien cancela, te avisamos con una notificación y vas a tener 15 minutos para comprar. Activá las notificaciones desde la campanita 🔔.',
+        'success');
+    } catch (err) {
+      this.modalService.open('No se pudo', err instanceof Error ? err.message : 'Error al anotarte.', 'error');
+    } finally {
+      this.procesandoEspera.set(false);
+    }
+  }
+
+  async salirDeEspera(): Promise<void> {
+    const lugar = this.miLugar();
+    if (!lugar) return;
+    await this.listaEspera.salir(lugar.id);
+    await this.refrescarEspera();
+  }
+
   toggleSeat(uuid: string): void {
+    if (this.funcionCancelada()) return;
+    const seat = this.seats().find(s => s.id === uuid);
+    // No se puede elegir más butacas que las disponibles (las reservadas a la lista de espera no cuentan)
+    if (seat?.status === 'free' && this.selected().length >= this.disponibles()) {
+      this.modalService.open('Sin butacas disponibles',
+        this.disponibles() === 0
+          ? 'Las butacas libres están reservadas para la lista de espera. Anotate para que te avisemos.'
+          : `Solo podés elegir ${this.disponibles()} butaca(s): el resto está reservado para la lista de espera.`,
+        'info');
+      return;
+    }
     this.seats.update(prev => prev.map(s => {
       if (s.id !== uuid || s.status === "occupied") return s;
       return { ...s, status: s.status === "selected" ? "free" : "selected" };
