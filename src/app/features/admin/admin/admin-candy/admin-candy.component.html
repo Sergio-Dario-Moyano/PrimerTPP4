@@ -32,11 +32,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="p-precio">Precio ($)</label>
-                <input id="p-precio" type="number" formControlName="precio">
+                <input id="p-precio" type="number" formControlName="precio" placeholder="Ej. 3500">
               </div>
               <div class="form-group">
                 <label for="p-puntos">Costo en puntos (canje)</label>
-                <input id="p-puntos" type="number" formControlName="costo_puntos">
+                <input id="p-puntos" type="number" formControlName="costo_puntos" placeholder="Ej. 800">
                 <span class="form-ayuda">0 = no se puede canjear</span>
               </div>
             </div>
@@ -93,7 +93,7 @@
             </div>
             <div class="form-group">
               <label for="c-precio">Precio fijo ($)</label>
-              <input id="c-precio" type="number" formControlName="precio">
+              <input id="c-precio" type="number" formControlName="precio" placeholder="Ej. 9000">
             </div>
             <label class="checkbox-label"><input type="checkbox" formControlName="incluye_entrada"> Incluye una entrada (cubre el precio de 1 entrada general)</label>
             <label class="checkbox-label"><input type="checkbox" formControlName="en_oferta"> Destacado / en oferta</label>
@@ -117,8 +117,10 @@
                   <td><strong>{{ c.nombre }}</strong><br><small>{{ c.descripcion }}</small></td>
                   <td>{{ c.precio | currency:'ARS':'$':'1.0-0' }}</td>
                   <td>
-                    @if (c.incluye_entrada) { <span class="badge preventa">Con entrada</span> }
-                    @if (c.en_oferta) { <span class="badge proximamente">Destacado</span> }
+                    <div class="badges">
+                      @if (c.incluye_entrada) { <span class="badge preventa">Con entrada</span> }
+                      @if (c.en_oferta) { <span class="badge proximamente">Destacado</span> }
+                    </div>
                   </td>
                   <td><span class="badge" [class.activo]="c.activo" [class.inactivo]="!c.activo">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
                   <td class="acciones">

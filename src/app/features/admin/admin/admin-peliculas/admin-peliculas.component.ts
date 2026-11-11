@@ -63,15 +63,15 @@ export class AdminPeliculasComponent implements OnInit {
   form = this.fb.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(2)]],
     sinopsis: ['', [Validators.required, Validators.minLength(10)]],
-    duracion_minutos: [120, [Validators.required, Validators.min(30), Validators.max(300)]],
+    duracion_minutos: [null as number | null, [Validators.required, Validators.min(30), Validators.max(300)]],
     url_imagen: ['', [Validators.required]],
     hero_imagen: ['', [Validators.required]],
     restriccion_edad: [0, [Validators.required]],
-    precio_base: [5000, [Validators.required, Validators.min(0)]],
+    precio_base: [null as number | null, [Validators.required, Validators.min(0)]],
     estado: ['cartelera' as PeliculaAdmin['estado'], [Validators.required]],
     fecha_estreno: ['', [fechaValidator]],
     con_preventa: [false],
-    preventa_precio: [0, [Validators.min(0)]]
+    preventa_precio: [null as number | null, [Validators.min(0)]]
   });
 
   async ngOnInit(): Promise<void> {
@@ -162,7 +162,7 @@ export class AdminPeliculasComponent implements OnInit {
       estado: p.estado,
       fecha_estreno: aTextoFecha(desdeBD(p.fecha_estreno)),
       con_preventa: p.preventa_precio != null,
-      preventa_precio: p.preventa_precio ?? 0
+      preventa_precio: p.preventa_precio
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -185,6 +185,10 @@ export class AdminPeliculasComponent implements OnInit {
 
     if (v.estado === 'proximamente' && !estreno) {
       this.mensajeError.set('Las películas "Próximamente" necesitan fecha de estreno.');
+      return;
+    }
+    if (v.con_preventa && (v.preventa_precio == null || Number(v.preventa_precio) <= 0)) {
+      this.mensajeError.set('Ingresá el precio de preventa.');
       return;
     }
     if (v.con_preventa && !estreno) {

@@ -43,25 +43,45 @@
           }
         }
 
-        @if (requiereTarjeta()) {
-        <h2 class="payment-form__subtitle">Datos de la Tarjeta</h2>
-        <div class="payment-form__group">
-          <label class="payment-form__label">Número de Tarjeta</label>
-          <input type="text" formControlName="tarjeta" class="payment-form__input" placeholder="1234 5678 9101 1121" maxlength="16">
-        </div>
+        @if (hayQuePagar()) {
+          <h2 class="payment-form__subtitle">Medio de Pago</h2>
+          <div class="medio-pago" role="radiogroup" aria-label="Medio de pago">
+            <button type="button" class="medio-pago__opcion" role="radio"
+                    [class.medio-pago__opcion--activa]="medioPago() === 'tarjeta'"
+                    [attr.aria-checked]="medioPago() === 'tarjeta'"
+                    (click)="elegirMedioPago('tarjeta')">
+              💳 Tarjeta
+            </button>
+            <button type="button" class="medio-pago__opcion" role="radio"
+                    [class.medio-pago__opcion--activa]="medioPago() === 'efectivo'"
+                    [attr.aria-checked]="medioPago() === 'efectivo'"
+                    (click)="elegirMedioPago('efectivo')">
+              💵 Efectivo
+            </button>
+          </div>
 
-        <div class="payment-form__row">
-          <div class="payment-form__group">
-            <label class="payment-form__label">Vencimiento</label>
-            <input type="text" formControlName="vencimiento" class="payment-form__input" placeholder="MM/YY" maxlength="5">
-          </div>
-          <div class="payment-form__group">
-            <label class="payment-form__label">Código CVC</label>
-            <input type="text" formControlName="cvc" class="payment-form__input" placeholder="123" maxlength="4">
-          </div>
-        </div>
+          @if (medioPago() === 'tarjeta') {
+            <h2 class="payment-form__subtitle">Datos de la Tarjeta</h2>
+            <div class="payment-form__group">
+              <label class="payment-form__label">Número de Tarjeta</label>
+              <input type="text" formControlName="tarjeta" class="payment-form__input" appMascaraTarjeta="numero">
+            </div>
+
+            <div class="payment-form__row">
+              <div class="payment-form__group">
+                <label class="payment-form__label">Vencimiento</label>
+                <input type="text" formControlName="vencimiento" class="payment-form__input" appMascaraTarjeta="vencimiento">
+              </div>
+              <div class="payment-form__group">
+                <label class="payment-form__label">Código CVC</label>
+                <input type="text" formControlName="cvc" class="payment-form__input" placeholder="123" maxlength="4" inputmode="numeric">
+              </div>
+            </div>
+          } @else {
+            <p class="beneficio beneficio--ok">💵 Pagás <strong>$ {{ totalPagar() | number:'1.0-0' }}</strong> en efectivo.</p>
+          }
         } @else {
-          <p class="beneficio beneficio--ok">✅ Tu crédito y tus canjes cubren el total: no hace falta tarjeta.</p>
+          <p class="beneficio beneficio--ok">✅ Tu crédito y tus canjes cubren el total: no hace falta pagar.</p>
         }
 
         @if (puntosAGanar() > 0) {
@@ -69,7 +89,7 @@
         }
 
         <button type="submit" class="payment-form__btn" [disabled]="procesando()">
-          {{ procesando() ? 'PROCESANDO...' : (requiereTarjeta() ? 'PAGAR $ ' + (totalPagar() | number:'1.0-0') : 'CONFIRMAR COMPRA') }}
+          {{ procesando() ? 'PROCESANDO...' : (hayQuePagar() ? 'PAGAR $ ' + (totalPagar() | number:'1.0-0') : 'CONFIRMAR COMPRA') }}
         </button>
       </form>
     </div>
@@ -120,12 +140,6 @@
               <span>- $ {{ montoGratis() | number:'1.0-0' }}</span>
             </div>
           }
-
-          <div class="summary-divider"></div>
-          <div class="summary-item">
-            <span>Cargo de Servicio</span>
-            <span>$ {{ cargoServicio() | number:'1.0-0' }}</span>
-          </div>
 
           <!-- Módulo de Ingreso de Cupón -->
           <div class="summary-divider"></div>

@@ -8,6 +8,7 @@ import { ListaEsperaService } from '../../../../core/services/lista-espera.servi
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
 import { fechaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD } from '../../../../shared/utils/fechas';
+import { ModalService } from '../../../../core/services/modal.service';
 
 interface PeliculaSelect { id: string; titulo: string; duracion_minutos: number; }
 
@@ -35,6 +36,7 @@ type Modo = 'unica' | 'recurrente';
   styleUrls: ['../admin-shared.css']
 })
 export class AdminFuncionesComponent implements OnInit {
+  private modal = inject(ModalService);
   private fb = inject(FormBuilder);
   private supabase = inject(SupabaseService).client;
   private funcionesService = inject(FuncionesService);
@@ -160,6 +162,9 @@ export class AdminFuncionesComponent implements OnInit {
         peliculaId: v.pelicula_id, fechas, formato: v.formato, idioma: v.idioma
       });
       this.resultado.set(res);
+      // Formulario limpio para la próxima carga (formato e idioma vuelven a sus valores por defecto)
+      this.form.reset();
+      this.diasSeleccionados.set([]);
       await this.cargarFunciones();
     } catch (err) {
       this.mensajeError.set(err instanceof Error ? err.message : 'Error al programar.');
@@ -212,7 +217,7 @@ export class AdminFuncionesComponent implements OnInit {
       this.mensajeError.set('No se puede eliminar una función con entradas vendidas.');
       return;
     }
-    if (!confirm(`¿Eliminar la función de "${f.peliculas?.titulo}" del ${f.fecha_hora.slice(0, 16)}?`)) return;
+    if (!(await this.modal.confirmar('Eliminar función', `¿Eliminar la función de "${f.peliculas?.titulo}" del ${f.fecha_hora.slice(0, 16)}?`, 'Eliminar'))) return;
 
     const { error } = await this.supabase.from('funciones').delete().eq('id', f.id);
     if (error) { this.mensajeError.set(error.message); return; }

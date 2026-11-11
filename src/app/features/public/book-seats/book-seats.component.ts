@@ -20,7 +20,7 @@ import { RawEntrada } from '../../../core/models/RawEntrada.model';
 import { RawPelicula } from '../../../core/models/RawPelicula.model';
 import { Cell } from '../../../core/models/Cell.model';
 import { Seat, SeatType } from '../../../core/models/Seat.model';
-import { precioBaseVigente, precioButaca, resumirEntradasPorTipo, enPreventa, CARGO_SERVICIO_ENTRADAS, RECARGO_VIP } from '../../../core/utils/precios';
+import { precioBaseVigente, precioButaca, resumirEntradasPorTipo, enPreventa, RECARGO_VIP } from '../../../core/utils/precios';
 
 @Component({
   selector: 'app-book-seats',
@@ -105,7 +105,6 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   cantidadVipSeleccionadas = computed(() => this.selected().filter(s => s.type === 'vip').length);
   precioVip = computed(() => precioButaca(this.precioBase(), 'vip', this.recargoVip()));
 
-  cargoServicio = computed(() => this.selected().length > 0 ? CARGO_SERVICIO_ENTRADAS : 0);
 
   rowGroups = computed(() => {
     const currentSeats = this.seats();

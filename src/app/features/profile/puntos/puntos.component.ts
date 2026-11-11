@@ -51,7 +51,7 @@ export class PuntosComponent implements OnInit {
   async canjear(r: Recompensa): Promise<void> {
     const user = this.auth.usuarioActual();
     if (!user) return;
-    if (!confirm(`¿Canjear ${r.costo} puntos por "${r.nombre}"?`)) return;
+    if (!(await this.modal.confirmar('Confirmar canje', `¿Canjear ${r.costo} puntos por "${r.nombre}"?`, 'Canjear'))) return;
 
     this.canjeando.set(this.claveDe(r));
     try {

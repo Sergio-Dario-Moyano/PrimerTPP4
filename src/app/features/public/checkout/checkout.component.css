@@ -322,3 +322,35 @@
 }
 .beneficio__contador button:disabled { opacity: 0.35; cursor: not-allowed; }
 .puntos-a-ganar { color: #f5b301; font-size: 0.9rem; margin: 0.25rem 0 0.75rem; }
+
+/* =========================================================
+   MEDIO DE PAGO (tarjeta / efectivo)
+   ========================================================= */
+.medio-pago {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.medio-pago__opcion {
+  padding: 0.85rem 1rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.medio-pago__opcion:hover {
+  border-color: var(--primary-color);
+}
+
+.medio-pago__opcion--activa {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+  background-color: rgba(250, 204, 21, 0.08);
+}

@@ -9,7 +9,6 @@ import { ModalService } from '../../../core/services/modal.service';
   styleUrl: './modal.component.css'
 })
 export class ModalComponent {
-  // Inyectamos el servicio de forma pública para leerlo desde el HTML
   private modalService = inject(ModalService);
 
   // Exponemos solo las señales que la vista necesita leer
@@ -17,8 +16,15 @@ export class ModalComponent {
   tipo = this.modalService.tipo;
   titulo = this.modalService.titulo;
   mensaje = this.modalService.mensaje;
+  esConfirmacion = this.modalService.esConfirmacion;
+  textoConfirmar = this.modalService.textoConfirmar;
+  textoCancelar = this.modalService.textoCancelar;
 
   cerrar() {
     this.modalService.close();
+  }
+
+  aceptar() {
+    this.modalService.aceptar();
   }
 }

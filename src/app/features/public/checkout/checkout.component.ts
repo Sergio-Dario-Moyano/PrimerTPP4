@@ -10,10 +10,11 @@ import { ListaEsperaService } from '../../../core/services/lista-espera.service'
 import { CompraInsert } from '../../../core/models/Compra.model';
 import { EntradaInsert } from '../../../core/models/Entrada.model';
 import { DetalleCandyInsert } from '../../../core/models/DetalleCandyInsert.model';
-import {
-  CARGO_SERVICIO_ENTRADAS, CARGO_SERVICIO_CANDY, resumirEntradasPorTipo, montoEntradasCubiertas
-} from '../../../core/utils/precios';
+import { resumirEntradasPorTipo, montoEntradasCubiertas } from '../../../core/utils/precios';
 import { CODIGO_BIENVENIDA } from '../../../core/utils/constantes';
+import { MascaraTarjetaDirective } from '../../../shared/directives/mascara-tarjeta.directive';
+
+export type MedioPago = 'tarjeta' | 'efectivo';
 
 interface PerfilCheckout {
   fecha_nacimiento: string | null;
@@ -24,16 +25,16 @@ interface PerfilCheckout {
 
 /**
  * Checkout. Orden de cálculo del total:
- *   entradas + candy + cargos
+ *   entradas + candy
  *   − entradas cubiertas por combos con entrada / entradas gratis (canje de puntos)
  *   − cupón (%)
  *   − crédito a favor (cancelaciones anteriores)
- *   = total a pagar con tarjeta  →  1 punto por cada peso pagado
+ *   = total a pagar con tarjeta o en efectivo  →  1 punto por cada peso pagado
  */
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [DecimalPipe, ReactiveFormsModule],
+  imports: [DecimalPipe, ReactiveFormsModule, MascaraTarjetaDirective],
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.css']
 })
@@ -48,12 +49,15 @@ export class CheckoutComponent implements OnInit {
   checkoutForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
-    tarjeta: ['', [Validators.required, Validators.pattern('^[0-9]{16}$')]],
+    tarjeta: ['', [Validators.required, Validators.pattern('^[0-9]{4}( [0-9]{4}){3}$')]],
     vencimiento: ['', [Validators.required, Validators.pattern('^(0[1-9]|1[0-2])/([0-9]{2})$')]],
     cvc: ['', [Validators.required, Validators.pattern('^[0-9]{3,4}$')]]
   });
 
   cuponControl = this.fb.nonNullable.control('');
+
+  /** Medio de pago elegido para el saldo que quede después de crédito y canjes. */
+  medioPago = signal<MedioPago>('tarjeta');
 
   procesando = signal(false);
   validandoCupon = signal(false);
@@ -76,8 +80,6 @@ export class CheckoutComponent implements OnInit {
   detalleEntradas = computed(() => resumirEntradasPorTipo(this.butacas()));
   subtotalEntradas = computed(() => this.butacas().reduce((acc, b) => acc + b.precio, 0));
   subtotalCandy = computed(() => this.combos().reduce((acc, c) => acc + c.precioUnitario * c.cantidad, 0));
-  cargoServicio = computed(() =>
-    (this.butacas().length > 0 ? CARGO_SERVICIO_ENTRADAS : 0) + (this.combos().length > 0 ? CARGO_SERVICIO_CANDY : 0));
 
   /** Entradas que ya paga un combo "entrada + pochoclo + bebida". */
   entradasEnCombos = computed(() =>
@@ -95,7 +97,7 @@ export class CheckoutComponent implements OnInit {
   montoGratis = computed(() => this.montoCubierto() - this.montoCombos());
 
   subtotalGeneral = computed(() =>
-    this.subtotalEntradas() + this.subtotalCandy() + this.cargoServicio() - this.montoCubierto());
+    this.subtotalEntradas() + this.subtotalCandy() - this.montoCubierto());
   montoDescuento = computed(() => Math.round(this.subtotalGeneral() * (this.descuentoPorcentaje() / 100)));
 
   creditoDisponible = computed(() => Number(this.perfil()?.credito_favor ?? 0));
@@ -105,8 +107,11 @@ export class CheckoutComponent implements OnInit {
   totalPagar = computed(() => Math.max(0, this.subtotalGeneral() - this.montoDescuento() - this.creditoAplicado()));
   puntosAGanar = computed(() => this.usuarioId() ? Math.floor(this.totalPagar()) : 0);
 
-  /** Si el crédito / canjes cubren todo, no hace falta tarjeta. */
-  requiereTarjeta = computed(() => this.totalPagar() > 0);
+  /** Hay un saldo a pagar (si el crédito / canjes cubren todo, no se elige medio de pago). */
+  hayQuePagar = computed(() => this.totalPagar() > 0);
+
+  /** Solo se piden los datos de la tarjeta si hay saldo y se eligió tarjeta. */
+  requiereTarjeta = computed(() => this.hayQuePagar() && this.medioPago() === 'tarjeta');
 
   async ngOnInit(): Promise<void> {
     // Se puede pagar con butacas (entrada + candy opcional) o solo con candy
@@ -133,6 +138,17 @@ export class CheckoutComponent implements OnInit {
       // Reubicación por función cancelada: el crédito se aplica de entrada
       if (this.reservaService.reubicacion() && Number(perfil.credito_favor) > 0) this.usarCredito.set(true);
       this.checkoutForm.patchValue({ nombre: `${perfil.nombre} ${perfil.apellido}`.trim() });
+    }
+  }
+
+  elegirMedioPago(medio: MedioPago): void {
+    this.medioPago.set(medio);
+    // Al pasar a efectivo limpiamos los datos de la tarjeta para no guardarlos de más
+    if (medio === 'efectivo') {
+      this.checkoutForm.patchValue({ tarjeta: '', vencimiento: '', cvc: '' });
+      this.checkoutForm.controls.tarjeta.markAsUntouched();
+      this.checkoutForm.controls.vencimiento.markAsUntouched();
+      this.checkoutForm.controls.cvc.markAsUntouched();
     }
   }
 
@@ -234,9 +250,10 @@ export class CheckoutComponent implements OnInit {
       const nombreTitular = c.nombre.value;
       const credito = this.creditoAplicado();
 
-      const metodo = credito > 0 && this.totalPagar() > 0 ? 'tarjeta+credito'
+      const medio = this.medioPago(); // 'tarjeta' | 'efectivo'
+      const metodo = credito > 0 && this.totalPagar() > 0 ? `${medio}+credito`
         : credito > 0 ? 'credito'
-        : this.totalPagar() > 0 ? 'tarjeta' : 'canje';
+        : this.totalPagar() > 0 ? medio : 'canje';
 
       const payloadCompra: CompraInsert = {
         perfil_id: usuarioId,
@@ -307,6 +324,7 @@ export class CheckoutComponent implements OnInit {
 
       this.checkoutForm.reset();
       this.cuponControl.reset();
+      this.medioPago.set('tarjeta');
       this.reservaService.limpiarReserva();
       this.router.navigate(['/ticket', nuevaCompra.id]);
     } catch (error) {

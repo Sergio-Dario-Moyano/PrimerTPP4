@@ -7,10 +7,6 @@
 /** Recargo por defecto de las butacas VIP (filas R, S y T). Editable en Admin → Puntos y Canjes. */
 export const RECARGO_VIP = 0.5; // +50 %
 
-/** Cargos de servicio fijos por compra. */
-export const CARGO_SERVICIO_ENTRADAS = 1050;
-export const CARGO_SERVICIO_CANDY = 900;
-
 /** La preventa dura 7 días desde preventa_inicio (hasta el estreno). */
 export const DIAS_PREVENTA = 7;
 

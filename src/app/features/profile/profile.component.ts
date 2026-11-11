@@ -4,6 +4,7 @@ import { User } from '@supabase/supabase-js';
 
 import { SupabaseService } from '../../core/services/supabase';
 import { AuthService } from '../../core/services/auth.service';
+import { ModalService } from '../../core/services/modal.service';
 
 @Component({
   selector: 'app-profile',
@@ -16,6 +17,7 @@ export class ProfileComponent implements OnInit {
   private supabaseService = inject(SupabaseService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private modalService = inject(ModalService);
 
   cargando = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -42,6 +44,7 @@ export class ProfileComponent implements OnInit {
   }
 
   async cerrarSesion(): Promise<void> {
+    if (!(await this.modalService.confirmar('Cerrar sesión', '¿Deseás cerrar sesión?', 'Cerrar sesión'))) return;
     try {
       await this.authService.cerrarSesion();
       this.router.navigate(['/']);

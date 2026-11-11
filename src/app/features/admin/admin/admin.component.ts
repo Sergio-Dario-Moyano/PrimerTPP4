@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { SupabaseService } from '../../../core/services/supabase';
 import { PermisosService } from '../../../core/services/permisos.service';
+import { ModalService } from '../../../core/services/modal.service';
 
 @Component({
   selector: 'app-admin',
@@ -14,6 +15,7 @@ import { PermisosService } from '../../../core/services/permisos.service';
 export class AdminComponent implements OnInit {
   private supabase = inject(SupabaseService).client;
   private router = inject(Router);
+  private modalService = inject(ModalService);
 
   nombreUsuario = signal<string>('Administrador');
   emailUsuario = signal<string>('');
@@ -51,6 +53,7 @@ export class AdminComponent implements OnInit {
   }
 
   async cerrarSesion() {
+    if (!(await this.modalService.confirmar('Cerrar sesión', '¿Deseás cerrar sesión?', 'Cerrar sesión'))) return;
     await this.supabase.auth.signOut();
     this.router.navigate(['/home']);
   }

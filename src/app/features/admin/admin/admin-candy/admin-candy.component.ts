@@ -4,6 +4,7 @@ import { CurrencyPipe } from '@angular/common';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { ImageDropzoneComponent } from '../../../../shared/components/image-dropzone/image-dropzone.component';
+import { ModalService } from '../../../../core/services/modal.service';
 
 interface Categoria { id: number; nombre: string; }
 
@@ -28,6 +29,7 @@ type Pestania = 'productos' | 'combos' | 'categorias';
   styleUrls: ['../admin-shared.css']
 })
 export class AdminCandyComponent implements OnInit {
+  private modal = inject(ModalService);
   private fb = inject(FormBuilder);
   private supabase = inject(SupabaseService).client;
   private log = inject(LogService);
@@ -52,8 +54,8 @@ export class AdminCandyComponent implements OnInit {
   productoForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
     categoria_id: [null as number | null, Validators.required],
-    precio: [0, [Validators.required, Validators.min(1)]],
-    costo_puntos: [0, [Validators.min(0)]],
+    precio: [null as number | null, [Validators.required, Validators.min(1)]],
+    costo_puntos: [null as number | null, [Validators.min(0)]],
     url_imagen: ['', Validators.required],
     activo: [true]
   });
@@ -61,7 +63,7 @@ export class AdminCandyComponent implements OnInit {
   comboForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
     descripcion: [''],
-    precio: [0, [Validators.required, Validators.min(1)]],
+    precio: [null as number | null, [Validators.required, Validators.min(1)]],
     imagen_url: [''],
     incluye_entrada: [false],
     en_oferta: [false],
@@ -109,7 +111,7 @@ export class AdminCandyComponent implements OnInit {
 
   cancelarProducto(): void {
     this.productoEditando.set(null);
-    this.productoForm.reset({ categoria_id: null, precio: 0, costo_puntos: 0, activo: true });
+    this.productoForm.reset();
   }
 
   async guardarProducto(): Promise<void> {
@@ -119,7 +121,7 @@ export class AdminCandyComponent implements OnInit {
       return;
     }
     const v = this.productoForm.getRawValue();
-    const payload = { ...v, precio: Number(v.precio), costo_puntos: Number(v.costo_puntos), categoria_id: Number(v.categoria_id) };
+    const payload = { ...v, precio: Number(v.precio), costo_puntos: Number(v.costo_puntos ?? 0), categoria_id: Number(v.categoria_id) };
     const anterior = this.productoEditando();
 
     this.guardando.set(true);
@@ -171,7 +173,7 @@ export class AdminCandyComponent implements OnInit {
 
   cancelarCombo(): void {
     this.comboEditando.set(null);
-    this.comboForm.reset({ precio: 0, incluye_entrada: false, en_oferta: false, activo: true });
+    this.comboForm.reset();
   }
 
   async guardarCombo(): Promise<void> {
@@ -243,7 +245,7 @@ export class AdminCandyComponent implements OnInit {
       this.mensajeError.set('No se puede eliminar una categoría con productos. Cambialos de categoría primero.');
       return;
     }
-    if (!confirm(`¿Eliminar la categoría "${c.nombre}"?`)) return;
+    if (!(await this.modal.confirmar('Eliminar categoría', `¿Eliminar la categoría "${c.nombre}"?`, 'Eliminar'))) return;
     const { error } = await this.supabase.from('categorias_candy').delete().eq('id', c.id);
     if (error) { this.mensajeError.set(error.message); return; }
     await this.log.registrar('ELIMINAR_CATEGORIA', 'categorias_candy', null, `Se eliminó la categoría "${c.nombre}"`);

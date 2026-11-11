@@ -10,7 +10,6 @@ import { DecimalPipe } from '@angular/common';
 export class ResumenCompraComponent {
 
   candy = input<{ nombre: string; cantidad: number; precioTotal: number }[]>([]);
-  cargoServicioCandy = input<number>(0);
 
   /** Compra solo de candy: no muestra película, función ni asientos. */
   soloCandy = input<boolean>(false);
@@ -20,7 +19,6 @@ export class ResumenCompraComponent {
   butacas = input<string[]>([]);
 
   entradas = input<{ cantidad: number; tipo: string; precioTotal: number }[]>([]);
-  cargoServicioEntradas = input<number>(0);
 
   /** Descuentos a restar (ej. entradas incluidas en combos). */
   descuentos = input<{ concepto: string; monto: number }[]>([]);
@@ -36,6 +34,6 @@ export class ResumenCompraComponent {
 
     const descuentos = this.descuentos().reduce((sum, d) => sum + d.monto, 0);
 
-    return subtotalEntradas + this.cargoServicioEntradas() + subtotalCandy + this.cargoServicioCandy() - descuentos;
+    return subtotalEntradas + subtotalCandy - descuentos;
   });
 }

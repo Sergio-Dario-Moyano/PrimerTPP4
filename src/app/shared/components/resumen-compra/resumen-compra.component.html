@@ -38,13 +38,6 @@
           <span>${{ entrada.precioTotal | number:'1.2-2' }}</span>
         </div>
       }
-
-      @if (cargoServicioEntradas() > 0) {
-        <div class="resumen__fila resumen__fila--cargo">
-          <span>Cargo de servicio</span>
-          <span>${{ cargoServicioEntradas() | number:'1.2-2' }}</span>
-        </div>
-      }
     </div>
   }
 
@@ -62,13 +55,6 @@
         <div class="resumen__fila">
           <span>{{ item.cantidad }}x {{ item.nombre }}</span>
           <span>${{ item.precioTotal | number:'1.0-0' }}</span>
-        </div>
-      }
-
-      @if (cargoServicioCandy() > 0) {
-        <div class="resumen__fila resumen__fila--cargo">
-          <span>Cargo de servicio</span>
-          <span>${{ cargoServicioCandy() | number:'1.0-0' }}</span>
         </div>
       }
     </div>

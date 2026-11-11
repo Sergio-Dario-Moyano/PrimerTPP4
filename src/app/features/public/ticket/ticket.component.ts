@@ -57,6 +57,11 @@ export class TicketComponent implements OnInit {
     const compra = this.compra();
     if (!compra || compra.estado === 'cancelada') return 'cancelada';
 
+    // Compra sin cuenta: no admite cancelación ni reintegro (si no asiste, se pierde)
+    if (!compra.perfil_id) {
+      return 'Compra realizada sin cuenta: no admite cancelación ni devolución. Si no asistís a la función, no se reintegra el importe.';
+    }
+
     if (this.entradas().some(e => e.estado === 'validada') ||
         this.estadosCandy().some(e => e === 'entregado')) {
       return 'Esta compra ya fue utilizada: no se puede cancelar.';

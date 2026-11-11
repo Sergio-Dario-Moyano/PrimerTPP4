@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AlertasService } from '../../../core/services/alertas.service';
 import { PermisosService } from '../../../core/services/permisos.service';
 import { NotificacionesService, Notificacion } from '../../../core/services/notificaciones.service';
+import { ModalService } from '../../../core/services/modal.service';
 
 @Component({
   selector: 'app-navbar',
@@ -17,6 +18,7 @@ export class NavbarComponent {
   private router = inject(Router);
   private authService = inject(AuthService);
   private alertasService = inject(AlertasService);
+  private modalService = inject(ModalService);
 
   // Avisos de estreno (campanita)
   avisos = this.alertasService.avisos;
@@ -87,6 +89,8 @@ export class NavbarComponent {
   }
 
   async cerrarSesion() {
+    this.cerrarMenu();
+    if (!(await this.modalService.confirmar('Cerrar sesión', '¿Deseás cerrar sesión?', 'Cerrar sesión'))) return;
     try {
       await this.authService.cerrarSesion();
       this.cerrarMenu();

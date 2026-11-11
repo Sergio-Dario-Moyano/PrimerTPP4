@@ -133,7 +133,7 @@
    ========================================================= */
 .seat-map__screen {
   width: 90%; /* Ahora la pantalla ocupa el 90% del ancho TOTAL de los asientos */
-  margin-bottom: 2.5rem;
+  margin: 0 auto 2.5rem; /* centrada sobre las butacas (antes quedaba pegada a la izquierda) */
   text-align: center;
 }
 

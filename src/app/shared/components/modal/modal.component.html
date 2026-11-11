@@ -33,7 +33,12 @@
       </div>
 
       <div class="modal-pie">
-        <button class="btn-cerrar" (click)="cerrar()">Entendido</button>
+        @if (esConfirmacion()) {
+          <button class="btn-cerrar" (click)="cerrar()">{{ textoCancelar() }}</button>
+          <button class="btn-confirmar" (click)="aceptar()">{{ textoConfirmar() }}</button>
+        } @else {
+          <button class="btn-cerrar" (click)="cerrar()">Entendido</button>
+        }
       </div>
 
     </div>

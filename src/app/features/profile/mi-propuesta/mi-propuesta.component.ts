@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SupabaseService } from '../../../core/services/supabase';
 import { AuthService } from '../../../core/services/auth.service';
+import { ModalService } from '../../../core/services/modal.service';
 
 interface Propuesta {
   id: string;
@@ -32,6 +33,7 @@ export class MiPropuestaComponent implements OnInit {
   private fb = inject(FormBuilder);
   private supabase = inject(SupabaseService).client;
   private auth = inject(AuthService);
+  private modalService = inject(ModalService);
 
   readonly MAX_DESCRIPCION = 500;
   readonly MAX_MOTIVO = 500;
@@ -106,7 +108,7 @@ export class MiPropuestaComponent implements OnInit {
   }
 
   async retirar(p: Propuesta): Promise<void> {
-    if (!confirm(`¿Retirar tu propuesta de "${p.titulo}"? Vas a poder enviar otra.`)) return;
+    if (!(await this.modalService.confirmar('Retirar propuesta', `¿Retirar tu propuesta de "${p.titulo}"? Vas a poder enviar otra.`, 'Retirar'))) return;
     await this.supabase.from('propuestas').delete().eq('id', p.id).eq('estado', 'pendiente');
     this.exito.set('');
     await this.cargar();

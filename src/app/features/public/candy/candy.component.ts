@@ -14,7 +14,7 @@ import { RawProductoCandy } from '../../../core/models/RawProductoCandy.model';
 import { ProductoCandy } from '../../../core/models/ProductoCandy.model';
 import { ComboReservado } from '../../../core/models/ComboReservado.model';
 import {
-  resumirEntradasPorTipo, montoEntradasCubiertas, CARGO_SERVICIO_ENTRADAS, CARGO_SERVICIO_CANDY
+  resumirEntradasPorTipo, montoEntradasCubiertas
 } from '../../../core/utils/precios';
 
 interface Categoria { id: number; nombre: string; }
@@ -92,8 +92,6 @@ export class CandyComponent implements OnInit {
 
   nombresButacas = computed(() => this.butacasReservadas().map(b => `${b.fila}${b.columna}`));
   resumenEntradas = computed(() => resumirEntradasPorTipo(this.butacasReservadas()));
-  cargoServicioEntradas = computed(() => this.butacasReservadas().length > 0 ? CARGO_SERVICIO_ENTRADAS : 0);
-  cargoServicioCandy = computed(() => this.itemsCarrito().length > 0 ? CARGO_SERVICIO_CANDY : 0);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');

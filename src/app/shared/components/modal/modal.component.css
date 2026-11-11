@@ -76,6 +76,7 @@
   padding: 1rem 1.5rem;
   display: flex;
   justify-content: flex-end;
+  gap: 0.75rem;
   background-color: #181818;
 }
 
@@ -92,6 +93,21 @@
 
 .btn-cerrar:hover {
   background-color: #444444;
+}
+
+.btn-confirmar {
+  background-color: #e50914;
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-confirmar:hover {
+  background-color: #b20710;
 }
 
 @keyframes fadeIn {

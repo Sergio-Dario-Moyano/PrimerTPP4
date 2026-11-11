@@ -39,7 +39,7 @@ export class AdminCuponesComponent implements OnInit {
 
   nuevoForm = this.fb.nonNullable.group({
     codigo: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[A-Za-z0-9_-]+$/)]],
-    porcentaje_descuento: [20, [Validators.required, Validators.min(1), Validators.max(100)]],
+    porcentaje_descuento: [null as number | null, [Validators.required, Validators.min(1), Validators.max(100)]],
     solo_mayores_50: [false]
   });
 
@@ -97,6 +97,7 @@ export class AdminCuponesComponent implements OnInit {
 
   cancelar(): void {
     this.editandoId.set(null);
+    this.edicionForm.reset();
   }
 
   async guardar(c: CuponAdmin): Promise<void> {
@@ -125,7 +126,7 @@ export class AdminCuponesComponent implements OnInit {
       await this.log.registrar('MODIFICAR_CUPON', 'cupones', c.id, `Cupón ${c.codigo}: ${detalle.join(', ')}`);
     }
     this.mensajeExito.set(`Cupón ${cambios.codigo} actualizado.`);
-    this.editandoId.set(null);
+    this.cancelar();
     await this.cargar();
   }
 

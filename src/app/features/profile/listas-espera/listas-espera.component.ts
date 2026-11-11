@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ListaEsperaService, MiListaEspera, desdeUtc } from '../../../core/services/lista-espera.service';
 import { desdeBD } from '../../../shared/utils/fechas';
+import { ModalService } from '../../../core/services/modal.service';
 
 /** Listas de espera del usuario: en cuáles está y en qué posición (mail "RPP final"). */
 @Component({
@@ -17,6 +18,7 @@ export class ListasEsperaComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private listaEspera = inject(ListaEsperaService);
   private router = inject(Router);
+  private modalService = inject(ModalService);
 
   listas = signal<MiListaEspera[]>([]);
   cargando = signal<boolean>(true);
@@ -73,7 +75,7 @@ export class ListasEsperaComponent implements OnInit, OnDestroy {
   }
 
   async salir(l: MiListaEspera): Promise<void> {
-    if (!confirm('¿Salir de esta lista de espera? Vas a perder tu lugar.')) return;
+    if (!(await this.modalService.confirmar('Salir de la lista de espera', '¿Salir de esta lista de espera? Vas a perder tu lugar.', 'Salir'))) return;
     await this.listaEspera.salir(l.id);
     await this.listaEspera.procesar(l.funcion.id);
     await this.cargar();

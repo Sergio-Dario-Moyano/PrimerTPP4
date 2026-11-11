@@ -4,6 +4,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { PermisosService, SECCIONES_ADMIN } from '../../../../core/services/permisos.service';
+import { ModalService } from '../../../../core/services/modal.service';
 
 interface Rol {
   id: string;
@@ -44,6 +45,7 @@ export class AdminRolesComponent implements OnInit {
   private supabase = inject(SupabaseService).client;
   private log = inject(LogService);
   private permisosService = inject(PermisosService);
+  private modalService = inject(ModalService);
 
   readonly SECCIONES = SECCIONES_ADMIN;
   readonly ROLES_BASE = ROLES_BASE;
@@ -146,7 +148,7 @@ export class AdminRolesComponent implements OnInit {
 
   async eliminarRol(r: Rol): Promise<void> {
     const usuarios = this.conRol().filter(u => u.rol_id === r.id).length;
-    if (!confirm(`¿Eliminar el rol "${r.nombre}"?${usuarios ? ` ${usuarios} usuario(s) lo van a perder.` : ''}`)) return;
+    if (!(await this.modalService.confirmar('Eliminar rol', `¿Eliminar el rol "${r.nombre}"?${usuarios ? ` ${usuarios} usuario(s) lo van a perder.` : ''}`, 'Eliminar'))) return;
     const { error } = await this.supabase.from('roles').delete().eq('id', r.id);
     if (error) { this.mensajeError.set(error.message); return; }
     await this.log.registrar('ELIMINAR_ROL', 'roles', r.id, `Se eliminó el rol "${r.nombre}"`);
