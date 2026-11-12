@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { CODIGO_BIENVENIDA } from '../../../../core/utils/constantes';
+import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
 export interface CuponAdmin {
   id: string;
@@ -20,7 +21,7 @@ export interface CuponAdmin {
 @Component({
   selector: 'app-admin-cupones',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ErrorCampoDirective],
   templateUrl: './admin-cupones.component.html',
   styleUrls: ['../admin-shared.css']
 })

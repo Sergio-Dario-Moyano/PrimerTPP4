@@ -7,11 +7,12 @@
 
   <form [formGroup]="nuevoForm" (ngSubmit)="crear()" class="admin-form">
     <h3>Nuevo cupón</h3>
+    <p class="form-nota-obligatorios">Los campos marcados con <span class="form-obligatorio">*</span> son obligatorios.</p>
     <div class="form-row">
       <div class="form-group">
         <label for="codigo">Código</label>
-        <input id="codigo" type="text" formControlName="codigo" placeholder="Ej. JUBILADOS30" autocapitalize="characters">
-        @if (nuevoForm.controls.codigo.hasError('pattern')) { <span class="form-error">Solo letras, números, - y _.</span> }
+        <input id="codigo" type="text" formControlName="codigo" placeholder="Ej. JUBILADOS30" autocapitalize="characters"
+               errorPattern="Solo letras, números, - y _.">
       </div>
       <div class="form-group">
         <label for="porc">Descuento (%)</label>
@@ -36,7 +37,7 @@
           @for (c of cupones(); track c.id) {
             @if (editandoId() === c.id) {
               <tr class="fila-editando">
-                <td><input type="text" formControlName="codigo" aria-label="Código"></td>
+                <td><input type="text" formControlName="codigo" aria-label="Código" errorPattern="Solo letras, números, - y _."></td>
                 <td><input type="number" formControlName="porcentaje_descuento" min="1" max="100" aria-label="Porcentaje"></td>
                 <td><label class="checkbox-label"><input type="checkbox" formControlName="solo_mayores_50"> Solo +50</label></td>
                 <td><label class="checkbox-label"><input type="checkbox" formControlName="activo"> Activo</label></td>

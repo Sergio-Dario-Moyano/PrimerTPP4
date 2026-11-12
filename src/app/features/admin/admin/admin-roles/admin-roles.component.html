@@ -11,18 +11,19 @@
   <!-- Alta / edición de rol -->
   <form [formGroup]="form" (ngSubmit)="guardarRol()" class="admin-form">
     <h3>{{ editando() ? 'Editando rol: ' + editando()!.nombre : 'Nuevo rol' }}</h3>
+    <p class="form-nota-obligatorios">Los campos marcados con <span class="form-obligatorio">*</span> son obligatorios.</p>
     <div class="form-row">
       <div class="form-group">
         <label for="rol-nombre">Nombre</label>
         <input id="rol-nombre" type="text" formControlName="nombre" placeholder="Ej. Analista de reportes">
       </div>
       <div class="form-group">
-        <label for="rol-desc">Descripción</label>
+        <label for="rol-desc">Descripción (opcional)</label>
         <input id="rol-desc" type="text" formControlName="descripcion" placeholder="Para qué es este rol">
       </div>
     </div>
     <div class="form-group">
-      <label>Secciones a las que accede</label>
+      <label>Secciones a las que accede<span class="form-obligatorio" aria-hidden="true"> *</span></label>
       <div class="permisos-grid">
         @for (s of SECCIONES; track s.clave) {
           <label class="checkbox-label permiso">

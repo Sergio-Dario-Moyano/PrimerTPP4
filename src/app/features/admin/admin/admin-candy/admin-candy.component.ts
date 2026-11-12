@@ -5,6 +5,7 @@ import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { ImageDropzoneComponent } from '../../../../shared/components/image-dropzone/image-dropzone.component';
 import { ModalService } from '../../../../core/services/modal.service';
+import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
 interface Categoria { id: number; nombre: string; }
 
@@ -24,7 +25,7 @@ type Pestania = 'productos' | 'combos' | 'categorias';
 @Component({
   selector: 'app-admin-candy',
   standalone: true,
-  imports: [ReactiveFormsModule, CurrencyPipe, ImageDropzoneComponent],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, ImageDropzoneComponent],
   templateUrl: './admin-candy.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -62,7 +63,7 @@ export class AdminCandyComponent implements OnInit {
 
   comboForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
-    descripcion: [''],
+    descripcion: ['', [Validators.required, Validators.minLength(5)]],
     precio: [null as number | null, [Validators.required, Validators.min(1)]],
     imagen_url: [''],
     incluye_entrada: [false],

@@ -9,6 +9,7 @@ import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fec
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
 import { fechaValidator, parsearFecha, aFechaBD, aTimestampBD, desdeBD, aTextoFecha } from '../../../../shared/utils/fechas';
 import { DIAS_PREVENTA, enPreventa } from '../../../../core/utils/precios';
+import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
 interface Genero { id: number; nombre: string; }
 
@@ -35,7 +36,7 @@ export interface PeliculaAdmin {
 @Component({
   selector: 'app-admin-peliculas',
   standalone: true,
-  imports: [ReactiveFormsModule, CurrencyPipe, DatePipe, ImageDropzoneComponent, MascaraFechaDirective, AdminAccionDirective],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, DatePipe, ImageDropzoneComponent, MascaraFechaDirective, AdminAccionDirective],
   templateUrl: './admin-peliculas.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -67,12 +68,32 @@ export class AdminPeliculasComponent implements OnInit {
     url_imagen: ['', [Validators.required]],
     hero_imagen: ['', [Validators.required]],
     restriccion_edad: [0, [Validators.required]],
-    precio_base: [null as number | null, [Validators.required, Validators.min(0)]],
+    precio_base: [null as number | null, [Validators.required, Validators.min(1)]],
     estado: ['cartelera' as PeliculaAdmin['estado'], [Validators.required]],
     fecha_estreno: ['', [fechaValidator]],
     con_preventa: [false],
     preventa_precio: [null as number | null, [Validators.min(0)]]
   });
+
+  constructor() {
+    // Campos obligatorios según el caso: estreno (próximamente / preventa) y precio de preventa
+    this.form.controls.estado.valueChanges.subscribe(() => this.actualizarObligatorios());
+    this.form.controls.con_preventa.valueChanges.subscribe(() => this.actualizarObligatorios());
+  }
+
+  private actualizarObligatorios(): void {
+    const { estado, con_preventa, fecha_estreno, preventa_precio } = this.form.controls;
+    const pideEstreno = estado.value === 'proximamente' || con_preventa.value;
+
+    if (pideEstreno) fecha_estreno.addValidators(Validators.required);
+    else fecha_estreno.removeValidators(Validators.required);
+
+    if (con_preventa.value) preventa_precio.addValidators([Validators.required, Validators.min(1)]);
+    else preventa_precio.removeValidators([Validators.required, Validators.min(1)]);
+
+    fecha_estreno.updateValueAndValidity();
+    preventa_precio.updateValueAndValidity();
+  }
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.cargarGeneros(), this.cargarPeliculas()]);
@@ -174,9 +195,11 @@ export class AdminPeliculasComponent implements OnInit {
   }
 
   async guardar(): Promise<void> {
-    if (this.form.invalid) {
+    if (this.form.invalid || this.generosSeleccionados().length === 0) {
       this.form.markAllAsTouched();
-      this.mensajeError.set('Revisá los campos marcados (¿faltan las imágenes?).');
+      this.mensajeError.set(this.generosSeleccionados().length === 0 && this.form.valid
+        ? 'Elegí al menos un género.'
+        : 'Revisá los campos marcados con * (¿faltan las imágenes o el género?).');
       return;
     }
 
@@ -189,6 +212,10 @@ export class AdminPeliculasComponent implements OnInit {
     }
     if (v.con_preventa && (v.preventa_precio == null || Number(v.preventa_precio) <= 0)) {
       this.mensajeError.set('Ingresá el precio de preventa.');
+      return;
+    }
+    if (v.con_preventa && Number(v.preventa_precio) >= Number(v.precio_base)) {
+      this.mensajeError.set('El precio de preventa tiene que ser menor al precio normal de la entrada.');
       return;
     }
     if (v.con_preventa && !estreno) {

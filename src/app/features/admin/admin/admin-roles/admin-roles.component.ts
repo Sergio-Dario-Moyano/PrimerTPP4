@@ -5,6 +5,7 @@ import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { PermisosService, SECCIONES_ADMIN } from '../../../../core/services/permisos.service';
 import { ModalService } from '../../../../core/services/modal.service';
+import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
 interface Rol {
   id: string;
@@ -36,7 +37,7 @@ const ROLES_BASE = [
 @Component({
   selector: 'app-admin-roles',
   standalone: true,
-  imports: [ReactiveFormsModule, NgTemplateOutlet],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, NgTemplateOutlet],
   templateUrl: './admin-roles.component.html',
   styleUrls: ['../admin-shared.css']
 })

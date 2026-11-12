@@ -3,14 +3,16 @@
     <h2 class="auth__title">{{ isLoginMode() ? 'Iniciar Sesión' : 'Crear Cuenta' }}</h2>
 
     @if (isLoginMode()) {
-      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth__form">
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()" class="auth__form" novalidate>
         <div class="auth__group">
-          <label class="auth__label">Correo Electrónico</label>
-          <input type="email" formControlName="email" class="auth__input">
+          <label class="auth__label" for="login-email">Correo Electrónico</label>
+          <input id="login-email" type="email" formControlName="email" class="auth__input" autocomplete="email">
+          @if (mensajeError(loginForm.controls.email); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
         <div class="auth__group">
-          <label class="auth__label">Contraseña</label>
-          <input type="password" formControlName="clave" class="auth__input">
+          <label class="auth__label" for="login-clave">Contraseña</label>
+          <input id="login-clave" type="password" formControlName="clave" class="auth__input" autocomplete="current-password">
+          @if (mensajeError(loginForm.controls.clave); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
         <button type="submit" class="auth__btn" [disabled]="cargando()">
           {{ cargando() ? 'Procesando...' : 'Ingresar' }}
@@ -19,61 +21,73 @@
     }
 
     @if (!isLoginMode()) {
-      <form [formGroup]="registroForm" (ngSubmit)="onRegistro()" class="auth__form auth__form--grid">
+      <form [formGroup]="registroForm" (ngSubmit)="onRegistro()" class="auth__form auth__form--grid" novalidate>
         <div class="auth__group auth__group--full">
-          <label class="auth__label">Correo Electrónico</label>
-          <input type="email" formControlName="email" class="auth__input">
+          <label class="auth__label" for="reg-email">Correo Electrónico</label>
+          <input id="reg-email" type="email" formControlName="email" class="auth__input" autocomplete="email"
+                 placeholder="nombre@mail.com">
+          @if (mensajeError(registroForm.controls.email); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <div class="auth__group">
-          <label class="auth__label">Nombre</label>
-          <input type="text" formControlName="nombre" class="auth__input">
+          <label class="auth__label" for="reg-nombre">Nombre</label>
+          <input id="reg-nombre" type="text" formControlName="nombre" class="auth__input" autocomplete="given-name">
+          @if (mensajeError(registroForm.controls.nombre); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
         <div class="auth__group">
-          <label class="auth__label">Apellido</label>
-          <input type="text" formControlName="apellido" class="auth__input">
+          <label class="auth__label" for="reg-apellido">Apellido</label>
+          <input id="reg-apellido" type="text" formControlName="apellido" class="auth__input" autocomplete="family-name">
+          @if (mensajeError(registroForm.controls.apellido); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <div class="auth__group">
-          <label class="auth__label">Fecha de Nacimiento</label>
+          <label class="auth__label" for="reg-fecha">Fecha de Nacimiento</label>
           <input
+            id="reg-fecha"
             type="text"
             formControlName="fechaNacimiento"
             (input)="formatearFecha($event)"
             placeholder="DD / MM / AAAA"
             maxlength="14"
+            inputmode="numeric"
             class="auth__input">
-          @if (registroForm.controls.fechaNacimiento.hasError('required') && registroForm.controls.fechaNacimiento.touched) {
-            <span class="auth__error">La fecha de nacimiento es requerida.</span>
-          }
+          @if (mensajeError(registroForm.controls.fechaNacimiento); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <div class="auth__group">
-          <label class="auth__label">Tipo de Sangre</label>
-          <input type="text" formControlName="tipoSangre" class="auth__input">
+          <label class="auth__label" for="reg-sangre">Tipo de Sangre</label>
+          <select id="reg-sangre" formControlName="tipoSangre" class="auth__input">
+            <option value="" disabled>Seleccioná…</option>
+            @for (tipo of tiposSangre; track tipo) {
+              <option [value]="tipo">{{ tipo }}</option>
+            }
+          </select>
+          @if (mensajeError(registroForm.controls.tipoSangre); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <div class="auth__group">
-          <label class="auth__label">Color de Ojos</label>
-          <input type="text" formControlName="colorOjos" class="auth__input">
+          <label class="auth__label" for="reg-ojos">Color de Ojos</label>
+          <input id="reg-ojos" type="text" formControlName="colorOjos" class="auth__input" placeholder="Ej. marrón">
+          @if (mensajeError(registroForm.controls.colorOjos); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <div class="auth__group">
-          <label class="auth__label">Días Vacaciones/Año</label>
-          <input type="number" formControlName="diasVacaciones" class="auth__input">
+          <label class="auth__label" for="reg-vacaciones">Días Vacaciones/Año</label>
+          <input id="reg-vacaciones" type="number" formControlName="diasVacaciones" class="auth__input"
+                 min="1" max="365" step="1" placeholder="Ej. 14">
+          @if (mensajeError(registroForm.controls.diasVacaciones); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <div class="auth__group auth__group--full">
-          <label class="auth__label">Contraseña</label>
-          <input type="password" formControlName="clave" class="auth__input">
+          <label class="auth__label" for="reg-clave">Contraseña</label>
+          <input id="reg-clave" type="password" formControlName="clave" class="auth__input" autocomplete="new-password">
+          @if (mensajeError(registroForm.controls.clave); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <div class="auth__group auth__group--full">
-          <label class="auth__label">Confirmar Contraseña</label>
-          <input type="password" formControlName="confirmarClave" class="auth__input">
-          @if (registroForm.controls.confirmarClave.hasError('losControlesNoCoinciden') && registroForm.controls.confirmarClave.touched) {
-            <span class="auth__error">Las contraseñas no coinciden.</span>
-          }
+          <label class="auth__label" for="reg-confirmar">Confirmar Contraseña</label>
+          <input id="reg-confirmar" type="password" formControlName="confirmarClave" class="auth__input" autocomplete="new-password">
+          @if (mensajeError(registroForm.controls.confirmarClave); as msg) { <span class="auth__error">{{ msg }}</span> }
         </div>
 
         <button type="submit" class="auth__btn auth__group--full" [disabled]="cargando()">

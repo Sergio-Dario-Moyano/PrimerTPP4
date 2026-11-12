@@ -235,7 +235,22 @@ button:disabled {
 .form-row--imagenes { align-items: flex-start; }
 .form-row--imagenes > div:first-child { flex: 0 0 200px; }
 
-.form-error { color: #ef5350; font-size: 0.8rem; }
+.form-error { color: #ef5350; font-size: 0.8rem; display: block; margin-top: 0.25rem; }
+
+/* Asterisco de campo obligatorio (lo agrega ErrorCampoDirective) */
+.form-obligatorio { color: #ef5350; font-weight: bold; }
+
+/* Campo con error, después de que el usuario lo tocó o intentó guardar */
+.campo-invalido,
+input.campo-invalido,
+select.campo-invalido,
+textarea.campo-invalido {
+  border-color: #ef5350 !important;
+  box-shadow: 0 0 0 1px rgba(239, 83, 80, 0.35);
+}
+
+/* Nota al pie de los formularios */
+.form-nota-obligatorios { color: #888; font-size: 0.8rem; margin: 0 0 0.75rem; }
 .form-ayuda { color: #888; font-size: 0.8rem; }
 
 .checkbox-label {

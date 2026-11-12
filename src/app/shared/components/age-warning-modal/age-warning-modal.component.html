@@ -15,7 +15,11 @@
       <div class="age-warning__body">
         <p class="age-warning__message" [class.age-warning__message--error]="esMenorRegistrado()">
           Esta película es apta para mayores de {{ restriccionEdad() }} años.
-          <strong>Si eres menor de edad, deberás concurrir acompañado por un mayor de edad.</strong>
+          @if (esMenorRegistrado()) {
+            <strong>Según la fecha de nacimiento de tu cuenta no tenés la edad requerida, así que no podés comprar entradas para esta película.</strong>
+          } @else {
+            <strong>La entrada indicará que los menores deben concurrir acompañados por un adulto.</strong>
+          }
         </p>
       </div>
 

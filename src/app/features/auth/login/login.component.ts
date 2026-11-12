@@ -4,7 +4,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { ModalService } from '../../../core/services/modal.service';
-import { clavesCoincidenValidator } from '../../../shared/validators/auth';
+import {
+  clavesCoincidenValidator, soloLetrasValidator, tipoSangreValidator, enteroValidator,
+  fechaNacimientoValidator, TIPOS_SANGRE
+} from '../../../shared/validators/auth';
+import { AbstractControl } from '@angular/forms';
+import { mensajeDeError } from '../../../shared/utils/mensajes-error';
+
 import { SupabaseService } from '../../../core/services/supabase';
 
 @Component({
@@ -19,6 +25,8 @@ export class LoginComponent {
   private modalService = inject(ModalService);
   private route = inject(ActivatedRoute);
   private supabaseService = inject(SupabaseService);
+
+  readonly tiposSangre = TIPOS_SANGRE;
 
   isLoginMode = signal<boolean>(true);
   cargando = signal<boolean>(false);
@@ -35,18 +43,31 @@ export class LoginComponent {
 
   registroForm = new FormGroup({
     email: new FormControl('', { validators: [Validators.required, Validators.email], nonNullable: true }),
-    nombre: new FormControl('', { validators: [Validators.required, Validators.minLength(3), Validators.maxLength(50)], nonNullable: true }),
-    apellido: new FormControl('', { validators: [Validators.required], nonNullable: true }),
-    fechaNacimiento: new FormControl('', { validators: [Validators.required, Validators.minLength(14)], nonNullable: true }),
-    tipoSangre: new FormControl('', { validators: [Validators.required], nonNullable: true }),
-    colorOjos: new FormControl('', { validators: [Validators.required], nonNullable: true }),
-    diasVacaciones: new FormControl(0, { validators: [Validators.required, Validators.min(0)], nonNullable: true }),
+    nombre: new FormControl('', { validators: [Validators.required, Validators.minLength(2), Validators.maxLength(50), soloLetrasValidator], nonNullable: true }),
+    apellido: new FormControl('', { validators: [Validators.required, Validators.minLength(2), Validators.maxLength(50), soloLetrasValidator], nonNullable: true }),
+    fechaNacimiento: new FormControl('', { validators: [Validators.required, fechaNacimientoValidator], nonNullable: true }),
+    tipoSangre: new FormControl('', { validators: [Validators.required, tipoSangreValidator], nonNullable: true }),
+    colorOjos: new FormControl('', { validators: [Validators.required, Validators.minLength(3), Validators.maxLength(30), soloLetrasValidator], nonNullable: true }),
+    // Empieza vacío; tiene que ser un entero entre 1 y 365 (ni cero ni negativo)
+    diasVacaciones: new FormControl<number | null>(null, { validators: [Validators.required, Validators.min(1), Validators.max(365), enteroValidator] }),
     clave: this.controlClaveRegistro,
     confirmarClave: new FormControl('', {
       validators: [Validators.required, clavesCoincidenValidator(this.controlClaveRegistro)],
       nonNullable: true,
     }),
   });
+
+  /** Devuelve el mensaje de error del campo, solo si el usuario ya lo tocó. */
+  mensajeError(control: AbstractControl): string | null {
+    if (!(control.touched || control.dirty)) return null;
+    return mensajeDeError(control.errors);
+  }
+
+  constructor() {
+    // Si cambia la contraseña, volvemos a comparar con la confirmación
+    this.controlClaveRegistro.valueChanges.subscribe(() =>
+      this.registroForm.controls.confirmarClave.updateValueAndValidity({ emitEvent: false }));
+  }
 
   toggleMode() {
     this.isLoginMode.update(mode => !mode);
@@ -70,7 +91,8 @@ export class LoginComponent {
     }
 
     input.value = nuevoValor;
-    this.registroForm.patchValue({ fechaNacimiento: nuevoValor }, { emitEvent: false });
+    this.registroForm.controls.fechaNacimiento.setValue(nuevoValor);
+    this.registroForm.controls.fechaNacimiento.markAsDirty();
   }
 
   async onLogin() {
@@ -139,12 +161,12 @@ export class LoginComponent {
         formValues.email,
         formValues.clave,
         {
-          nombre: formValues.nombre,
-          apellido: formValues.apellido,
+          nombre: formValues.nombre.trim(),
+          apellido: formValues.apellido.trim(),
           fecha_nacimiento: fechaParaBD,
-          tipo_sangre: formValues.tipoSangre,
-          color_ojos: formValues.colorOjos,
-          dias_vacaciones: formValues.diasVacaciones
+          tipo_sangre: formValues.tipoSangre.toUpperCase(),
+          color_ojos: formValues.colorOjos.trim(),
+          dias_vacaciones: Number(formValues.diasVacaciones)
         }
       );
 
@@ -172,12 +194,24 @@ export class LoginComponent {
         }
       }
 
-      console.log('Registro exitoso');
+      this.registroForm.reset();
+      this.modalService.open(
+        '¡Registro exitoso!',
+        `Tu cuenta fue creada correctamente. ¡Bienvenido/a, ${formValues.nombre.trim()}!`,
+        'success'
+      );
       this.router.navigate(['/']);
 
     } catch (err: any) {
       console.error('Detalle técnico del error:', err);
-      this.modalService.open('Error en el Registro', 'No se pudo completar el registro. Intenta con otro correo.', 'error');
+      const yaRegistrado = err?.message === 'EMAIL_YA_REGISTRADO' || /already registered/i.test(err?.message ?? '');
+      this.modalService.open(
+        'Error en el Registro',
+        yaRegistrado
+          ? 'Ya existe una cuenta con ese correo. Iniciá sesión o usá otro correo.'
+          : 'No se pudo completar el registro. Intenta con otro correo.',
+        'error'
+      );
     } finally {
       this.cargando.set(false);
     }

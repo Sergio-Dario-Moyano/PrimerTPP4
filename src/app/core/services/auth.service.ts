@@ -32,6 +32,8 @@ export class AuthService {
     });
 
     if (error) throw error;
+    // Supabase no devuelve error si el correo ya existe: devuelve un usuario sin identidades
+    if (data.user && data.user.identities?.length === 0) throw new Error('EMAIL_YA_REGISTRADO');
     return data;
   }
 

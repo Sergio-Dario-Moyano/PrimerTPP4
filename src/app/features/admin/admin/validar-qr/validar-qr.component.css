@@ -169,3 +169,8 @@ button:disabled {
 .resultado-items { margin: 0.75rem 0 0; padding-left: 1.2rem; }
 .resultado-items li { margin-bottom: 0.25rem; }
 .aviso-edad { color: #ffb347; font-weight: 600; }
+
+/* Mensajes de ErrorCampoDirective */
+.form-error { color: #ef5350; font-size: 0.8rem; display: block; margin-top: 0.25rem; }
+.form-obligatorio { color: #ef5350; font-weight: bold; }
+.campo-invalido { border-color: #ef5350 !important; }

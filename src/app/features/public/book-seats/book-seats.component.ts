@@ -299,6 +299,17 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** true si hay un usuario logueado que no llega a la edad mínima de la película. */
+  private async esMenorParaEstaPelicula(): Promise<boolean> {
+    const restriccion = this.restriccionActual();
+    const usuario = this.authService.usuarioActual();
+    if (!restriccion || !usuario) return false;
+
+    const { data: perfil } = await this.supabaseService.client
+      .from('perfiles').select('fecha_nacimiento').eq('id', usuario.id).single();
+    return !!perfil?.fecha_nacimiento && this.calcularEdad(perfil.fecha_nacimiento) < restriccion;
+  }
+
   calcularEdad(fechaNacimiento: string): number {
     const hoy = new Date();
     const nacimiento = new Date(fechaNacimiento);
@@ -424,6 +435,14 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   }
 
   async confirmarSeleccion(): Promise<void> {
+    // Segundo control de edad al confirmar: al cargar la página la sesión puede no estar
+    // restaurada todavía, y un menor registrado no puede comprar (mail 12/02).
+    if (await this.esMenorParaEstaPelicula()) {
+      this.esMenorRegistrado.set(true);
+      this.modalEdadAbierto.set(true);
+      return;
+    }
+
     const seleccionadas = this.selected();
     if (seleccionadas.length === 0) return;
 

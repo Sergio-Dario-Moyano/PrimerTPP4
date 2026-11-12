@@ -12,6 +12,7 @@
 
   <form [formGroup]="form" (ngSubmit)="guardar()" class="admin-form">
     <h3>{{ editando() ? 'Editando: ' + editando()!.titulo : 'Nueva película' }}</h3>
+    <p class="form-nota-obligatorios">Los campos marcados con <span class="form-obligatorio">*</span> son obligatorios.</p>
 
     <div class="form-group">
       <label for="titulo">Título</label>
@@ -24,7 +25,7 @@
     </div>
 
     <div class="form-group">
-      <label>Géneros (podés elegir varios)</label>
+      <label>Géneros (podés elegir varios)<span class="form-obligatorio" aria-hidden="true"> *</span></label>
       <div class="generos-grid">
         @for (g of generos(); track g.id) {
           <button type="button" class="genero-chip"
@@ -70,9 +71,6 @@
       <div class="form-group">
         <label for="estreno">Fecha de estreno</label>
         <input id="estreno" type="text" formControlName="fecha_estreno" appMascaraFecha="fecha">
-        @if (form.controls.fecha_estreno.hasError('fechaInvalida')) {
-          <span class="form-error">Fecha inválida (dd/mm/aaaa).</span>
-        }
       </div>
     </div>
 

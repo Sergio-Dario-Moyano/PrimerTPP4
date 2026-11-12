@@ -4,6 +4,7 @@ import { DatePipe } from '@angular/common';
 import { Html5Qrcode } from 'html5-qrcode';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { PermisosService } from '../../../../core/services/permisos.service';
+import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
 export type ModoValidacion = 'cine' | 'candy';
 
@@ -48,7 +49,7 @@ interface CandyValidacion {
 @Component({
   selector: 'app-validar-qr',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, DatePipe],
   templateUrl: './validar-qr.component.html',
   styleUrls: ['./validar-qr.component.css']
 })

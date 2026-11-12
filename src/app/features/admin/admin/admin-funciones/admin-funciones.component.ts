@@ -9,6 +9,7 @@ import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fec
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
 import { fechaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD } from '../../../../shared/utils/fechas';
 import { ModalService } from '../../../../core/services/modal.service';
+import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
 interface PeliculaSelect { id: string; titulo: string; duracion_minutos: number; }
 
@@ -31,7 +32,7 @@ type Modo = 'unica' | 'recurrente';
 @Component({
   selector: 'app-admin-funciones',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe, MascaraFechaDirective, AdminAccionDirective],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, DatePipe, MascaraFechaDirective, AdminAccionDirective],
   templateUrl: './admin-funciones.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -108,8 +109,24 @@ export class AdminFuncionesComponent implements OnInit {
 
   fechaDe(f: FuncionListado): Date | null { return desdeBD(f.fecha_hora); }
 
+  constructor() {
+    this.actualizarObligatorios();
+  }
+
+  /** Función única: pide la fecha. Recurrente: pide desde / hasta. */
+  private actualizarObligatorios(): void {
+    const { fecha, desde, hasta } = this.form.controls;
+    const unica = this.modo() === 'unica';
+    for (const [control, obligatorio] of [[fecha, unica], [desde, !unica], [hasta, !unica]] as const) {
+      if (obligatorio) control.addValidators(Validators.required);
+      else control.removeValidators(Validators.required);
+      control.updateValueAndValidity();
+    }
+  }
+
   cambiarModo(m: Modo): void {
     this.modo.set(m);
+    this.actualizarObligatorios();
     this.resultado.set(null);
     this.mensajeError.set('');
   }
@@ -143,9 +160,9 @@ export class AdminFuncionesComponent implements OnInit {
     this.mensajeError.set('');
     this.resultado.set(null);
 
-    if (this.form.controls.pelicula_id.invalid || this.form.controls.hora.invalid) {
+    if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.mensajeError.set('Elegí la película y una hora válida (hh:mm).');
+      this.mensajeError.set('Completá los campos marcados con *.');
       return;
     }
 

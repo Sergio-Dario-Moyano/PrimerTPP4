@@ -4,6 +4,7 @@
 
   <form [formGroup]="form" (ngSubmit)="programar()" class="admin-form">
     <h3>Programar funciones</h3>
+    <p class="form-nota-obligatorios">Los campos marcados con <span class="form-obligatorio">*</span> son obligatorios.</p>
 
     <div class="generos-grid" role="tablist">
       <button type="button" class="genero-chip" [class.selected]="modo() === 'unica'" (click)="cambiarModo('unica')">Una sola fecha</button>
@@ -38,7 +39,6 @@
       <div class="form-group">
         <label for="hora">Hora de inicio</label>
         <input id="hora" type="text" formControlName="hora" appMascaraFecha="hora">
-        @if (form.controls.hora.hasError('horaInvalida')) { <span class="form-error">Hora inválida.</span> }
       </div>
     </div>
 
@@ -46,11 +46,10 @@
       <div class="form-group">
         <label for="fecha">Fecha</label>
         <input id="fecha" type="text" formControlName="fecha" appMascaraFecha="fecha">
-        @if (form.controls.fecha.hasError('fechaInvalida')) { <span class="form-error">Fecha inválida.</span> }
       </div>
     } @else {
       <div class="form-group">
-        <label>Días de la semana</label>
+        <label>Días de la semana<span class="form-obligatorio" aria-hidden="true"> *</span></label>
         <div class="dias-semana">
           @for (d of DIAS; track d.valor) {
             <button type="button" class="genero-chip" [class.selected]="diasSeleccionados().includes(d.valor)" (click)="toggleDia(d.valor)">{{ d.nombre }}</button>
