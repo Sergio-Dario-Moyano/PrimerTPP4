@@ -67,6 +67,15 @@ export class ListaEsperaService {
   }
 
   async estadoFuncion(funcionId: string, userId: string | null): Promise<EstadoEsperaFuncion> {
+    // El estado lo calcula la BD (migración 007): ve el turno de todos sin exponer datos ajenos
+    const rpc = await this.supabase.rpc('estado_lista_espera', { p_funcion: funcionId });
+    if (!rpc.error && rpc.data) {
+      const e = rpc.data as { turno_de_otro: boolean; turno_vence: string | null; en_espera: number;
+                              mi_lugar: MiLugarEnEspera | null };
+      return { turnoDeOtro: e.turno_de_otro, turnoVence: e.turno_vence, enEspera: e.en_espera, miLugar: e.mi_lugar };
+    }
+
+    // Respaldo si la 007 todavía no se ejecutó
     const { data } = await this.supabase
       .from('lista_espera')
       .select('id, perfil_id, estado, vence_en, creado_en')

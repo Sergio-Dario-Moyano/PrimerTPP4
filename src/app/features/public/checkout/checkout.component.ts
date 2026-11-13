@@ -328,7 +328,9 @@ export class CheckoutComponent implements OnInit {
         await this.supabase.from('compras').delete().eq('id', nuevaCompra.id);
         throw new Error(errorEntradas.code === '23505'
           ? 'Alguna de tus butacas acaba de ser comprada por otra persona. Elegí otras.'
-          : `Error en Entradas: ${errorEntradas.message}`);
+          : errorEntradas.message?.includes('LISTA_ESPERA')
+            ? 'Estas butacas están reservadas para quien tiene el turno en la lista de espera. Anotate y te avisamos cuando sea tu turno.'
+            : `Error en Entradas: ${errorEntradas.message}`);
       }
 
       if (this.combos().length > 0) {

@@ -72,8 +72,18 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
   /** Butacas que no están vendidas (libres o elegidas por mí). */
   libres = computed(() => this.seats().filter(s => s.status !== 'occupied').length);
-  /** Si otra persona de la lista tiene el turno, las butacas liberadas son solo para ella. */
-  disponibles = computed(() => this.espera()?.turnoDeOtro ? 0 : this.libres());
+  /**
+   * Con gente en la lista de espera, las butacas liberadas son SOLO para quien tiene el turno
+   * vigente (el #1 puede llevarse todas). Los demás —incluido el #2— esperan a que el turno
+   * pase a ellos. Sin lista, cualquiera compra las libres.
+   */
+  disponibles = computed(() => {
+    const e = this.espera();
+    if (!e) return this.libres();
+    if (e.miLugar?.estado === 'notificado') return this.libres();
+    if (e.turnoDeOtro || e.enEspera > 0) return 0;
+    return this.libres();
+  });
   /** Minutos de cada turno de la lista de espera (configurable en el admin). */
   minutosTurno = signal<number>(2);
   miLugar = computed(() => this.espera()?.miLugar ?? null);
