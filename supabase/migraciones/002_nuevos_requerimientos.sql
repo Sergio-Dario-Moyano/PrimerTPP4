@@ -131,7 +131,7 @@ end $$;
 
 -- ---------------------------------------------------------------------
 -- 5) Lista de espera
---    esperando → notificado (15 min para comprar) → compro | vencido
+--    esperando → notificado (un turno a la vez, 2 min configurables) → compro | vencido
 --    salio = el usuario se bajó · cancelada = la función se canceló
 -- ---------------------------------------------------------------------
 create table if not exists lista_espera (
@@ -211,14 +211,22 @@ create or replace function public.procesar_listas_espera(p_funcion uuid default 
 returns integer
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_func record;
-  v_cupos int;
   v_sig record;
   v_avisados int := 0;
+  v_minutos numeric;
 begin
-  -- 1) Vencer avisos y notificar a quien perdió el turno
+  -- Minutos de cada turno: configurables desde el admin (por defecto, 2)
+  select coalesce(max(nullif(regexp_replace(valor::text, '[^0-9.]', '', 'g'), '')::numeric), 2)
+    into v_minutos
+    from configuracion
+   where clave = 'minutos_turno_espera';
+  if v_minutos is null or v_minutos <= 0 then v_minutos := 2; end if;
+
+  -- 1) Vencer turnos pasados y avisar a quien lo perdió
   with vencidos as (
     update lista_espera
        set estado = 'vencido'
@@ -229,13 +237,13 @@ begin
   )
   insert into notificaciones (perfil_id, tipo, titulo, mensaje, link)
   select v.perfil_id, 'lista_espera', 'Se venció tu turno',
-         format('Pasaron los 15 minutos para comprar "%s". La butaca pasó al siguiente de la lista.', p.titulo),
+         format('Se terminó tu tiempo para comprar "%s". El turno pasó al siguiente de la lista.', p.titulo),
          '/perfil/espera'
     from vencidos v
     join funciones f on f.id = v.funcion_id
     join peliculas p on p.id = f.pelicula_id;
 
-  -- 2) Avisar a los siguientes
+  -- 2) De a UN turno por función: solo se avisa al siguiente si nadie tiene un turno vigente
   for v_func in
     select distinct le.funcion_id as id, p.titulo, f.fecha_hora
       from lista_espera le
@@ -246,38 +254,44 @@ begin
        and f.fecha_hora > public.ahora_local()
        and (p_funcion is null or le.funcion_id = p_funcion)
   loop
-    v_cupos := public.butacas_libres(v_func.id)
-             - (select count(*) from lista_espera
-                 where funcion_id = v_func.id and estado = 'notificado')::int;
+    -- Si dos pantallas procesan la misma lista a la vez, la segunda espera a la primera
+    -- (antes cada una podía avisar a una persona distinta)
+    perform pg_advisory_xact_lock(hashtext('lista-espera-' || v_func.id::text));
 
-    while v_cupos > 0 loop
-      select * into v_sig
-        from lista_espera
-       where funcion_id = v_func.id and estado = 'esperando'
-       order by creado_en
-       limit 1
-       for update skip locked;
-      exit when not found;
+    continue when exists (select 1 from lista_espera
+                           where funcion_id = v_func.id and estado = 'notificado' and vence_en >= now());
+    continue when public.butacas_libres(v_func.id) <= 0;
 
-      update lista_espera
-         set estado = 'notificado', notificado_en = now(), vence_en = now() + interval '15 minutes'
-       where id = v_sig.id;
+    select * into v_sig
+      from lista_espera
+     where funcion_id = v_func.id and estado = 'esperando'
+     order by creado_en
+     limit 1
+     for update;
+    continue when not found;
 
-      insert into notificaciones (perfil_id, tipo, titulo, mensaje, link)
-      values (v_sig.perfil_id, 'lista_espera', '¡Se liberó una butaca!',
-              format('Tenés 15 minutos para comprar tu entrada de "%s" (%s). Después pasa al siguiente de la lista.',
-                     v_func.titulo, to_char(v_func.fecha_hora, 'DD/MM HH24:MI')),
-              '/perfil/espera');
+    update lista_espera
+       set estado = 'notificado', notificado_en = now(),
+           vence_en = now() + make_interval(secs => (v_minutos * 60)::int)
+     where id = v_sig.id;
 
-      v_cupos := v_cupos - 1;
-      v_avisados := v_avisados + 1;
-    end loop;
+    insert into notificaciones (perfil_id, tipo, titulo, mensaje, link)
+    values (v_sig.perfil_id, 'lista_espera', '¡Es tu turno!',
+            format('Se liberaron butacas para "%s" (%s). Tenés %s minuto(s) para comprar; después el turno pasa al siguiente de la lista.',
+                   v_func.titulo, to_char(v_func.fecha_hora, 'DD/MM HH24:MI'), trim(to_char(v_minutos, 'FM990.##'))),
+            '/perfil/espera');
+
+    v_avisados := v_avisados + 1;
   end loop;
 
   return v_avisados;
 end;
 $$;
 
+
+-- Pago con puntos (migración 005): la cancelación también devuelve lo pagado con puntos
+alter table compras add column if not exists puntos_usados integer not null default 0;
+alter table compras add column if not exists monto_puntos numeric not null default 0;
 
 -- Cancelación de una función por parte del cine. ATÓMICA: todo el cuerpo corre
 -- en una sola transacción; si algo falla se lanza una excepción y no queda nada a medias.
@@ -321,8 +335,9 @@ begin
                      where e.funcion_id = p_funcion and e.estado <> 'cancelada')
      for update
   loop
-    -- Monto total de la compra, incluido el candy (lo pagado + el crédito que usó)
-    v_monto := coalesce(v_compra.total_pagado, 0) + coalesce(v_compra.credito_usado, 0);
+    -- Monto total de la compra, incluido el candy (lo pagado + el crédito y los puntos que usó)
+    v_monto := coalesce(v_compra.total_pagado, 0) + coalesce(v_compra.credito_usado, 0)
+             + coalesce(v_compra.monto_puntos, 0);
 
     if v_compra.perfil_id is not null then
       update perfiles

@@ -24,6 +24,7 @@ export class ListasEsperaComponent implements OnInit, OnDestroy {
   cargando = signal<boolean>(true);
   private ahora = signal<number>(Date.now());
   private reloj: ReturnType<typeof setInterval> | null = null;
+  minutosTurno = signal<number>(2);
 
   activas = computed(() => this.listas().filter(l => l.estado === 'esperando' || l.estado === 'notificado'));
   historial = computed(() => this.listas().filter(l => l.estado !== 'esperando' && l.estado !== 'notificado'));
@@ -36,10 +37,14 @@ export class ListasEsperaComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     // Primero se procesan las listas: vencen turnos viejos y se avisa a quien corresponda
     await this.listaEspera.procesar();
+    this.minutosTurno.set(await this.listaEspera.minutosTurno());
     await this.cargar();
     this.reloj = setInterval(() => {
       this.ahora.set(Date.now());
-      if (this.activas().some(l => l.estado === 'notificado' && this.segundos(l) === 0)) this.cargar();
+      // Se me venció el turno: se procesa la lista (pasa al siguiente) y se recarga
+      if (this.activas().some(l => l.estado === 'notificado' && this.segundos(l) === 0)) {
+        this.listaEspera.procesar().then(() => this.cargar());
+      }
     }, 1000);
   }
 

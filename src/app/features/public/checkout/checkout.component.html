@@ -21,14 +21,32 @@
         </div>
 
         @if (usuarioId() && perfil(); as p) {
-          @if (creditoDisponible() > 0 || maxEntradasGratis() > 0) {
-            <h2 class="payment-form__subtitle">Tus beneficios</h2>
+          @if (creditoDisponible() > 0 || puntosDisponibles() > 0 || maxEntradasGratis() > 0) {
+            <h2 class="payment-form__subtitle">Pagar con crédito o puntos</h2>
           }
           @if (creditoDisponible() > 0) {
             <label class="beneficio">
               <input type="checkbox" [checked]="usarCredito()" (change)="usarCredito.set($any($event.target).checked)">
               <span>Usar mi crédito a favor (<strong>$ {{ creditoDisponible() | number:'1.0-0' }}</strong> disponibles)</span>
             </label>
+          }
+          @if (puntosDisponibles() > 0) {
+            <label class="beneficio">
+              <input type="checkbox" [checked]="usarPuntos()" (change)="usarPuntos.set($any($event.target).checked)">
+              <span>
+                Usar mis puntos (<strong>{{ puntosDisponibles() | number:'1.0-0' }} pts</strong>
+                = $ {{ valorPuntosDisponibles() | number:'1.0-0' }})
+                @if (usarPuntos() && puntosAplicados() > 0) {
+                  <br><small>Se usan {{ puntosAplicados() | number:'1.0-0' }} pts para cubrir $ {{ montoPuntos() | number:'1.0-0' }}.</small>
+                }
+              </span>
+            </label>
+          }
+          @if ((creditoAplicado() > 0 || montoPuntos() > 0) && hayQuePagar()) {
+            <p class="beneficio beneficio--ok">
+              Tu crédito y tus puntos cubren $ {{ (creditoAplicado() + montoPuntos()) | number:'1.0-0' }}.
+              Completás los <strong>$ {{ totalPagar() | number:'1.0-0' }}</strong> restantes con tarjeta o efectivo.
+            </p>
           }
           @if (maxEntradasGratis() > 0) {
             <div class="beneficio">
@@ -81,7 +99,7 @@
             <p class="beneficio beneficio--ok">💵 Pagás <strong>$ {{ totalPagar() | number:'1.0-0' }}</strong> en efectivo.</p>
           }
         } @else {
-          <p class="beneficio beneficio--ok">✅ Tu crédito y tus canjes cubren el total: no hace falta pagar.</p>
+          <p class="beneficio beneficio--ok">✅ Tu crédito, tus puntos y tus canjes cubren el total: no hace falta pagar.</p>
         }
 
         @if (puntosAGanar() > 0) {
@@ -170,6 +188,12 @@
             <div class="summary-item summary-item--discount">
               <span>Crédito a favor</span>
               <span>- $ {{ creditoAplicado() | number:'1.0-0' }}</span>
+            </div>
+          }
+          @if (montoPuntos() > 0) {
+            <div class="summary-item summary-item--discount">
+              <span>Puntos ({{ puntosAplicados() | number:'1.0-0' }} pts)</span>
+              <span>- $ {{ montoPuntos() | number:'1.0-0' }}</span>
             </div>
           }
         </div>

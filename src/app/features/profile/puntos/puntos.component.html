@@ -26,12 +26,27 @@
         <span class="beneficios__label">Crédito a favor<br><small>(de cancelaciones, se usa al pagar)</small></span>
       </div>
       <div class="beneficios__item">
+        <span class="beneficios__valor">$ {{ (saldo().puntos * valorPunto()) | number:'1.0-0' }}</span>
+        <span class="beneficios__label">Valor de tus puntos<br><small>(1 pt = $ {{ valorPunto() | number:'1.0-2' }} al pagar)</small></span>
+      </div>
+      <div class="beneficios__item">
         <span class="beneficios__valor">{{ saldo().entradasGratis }}</span>
         <span class="beneficios__label">Entradas gratis<br><small>(se aplican en el checkout)</small></span>
       </div>
     </div>
 
-    <h4 class="puntos__subtitle puntos__subtitle--chico">Canjeá tus puntos</h4>
+    <div class="usar-saldo">
+      <p>
+        <strong>Usá tu crédito y tus puntos como medio de pago</strong> en cualquier entrada o producto del candy.
+        Se eligen en el último paso de la compra; si no alcanzan, completás el resto con tarjeta o efectivo.
+      </p>
+      <div class="usar-saldo__acciones">
+        <a routerLink="/" class="recompensa__btn">Comprar entradas</a>
+        <a routerLink="/candy" class="recompensa__btn">Comprar en el candy</a>
+      </div>
+    </div>
+
+    <h4 class="puntos__subtitle puntos__subtitle--chico">O canjeá tus puntos por una recompensa</h4>
     <div class="recompensas">
       @for (r of recompensas(); track claveDe(r)) {
         <article class="recompensa" [class.recompensa--bloqueada]="saldo().puntos < r.costo">

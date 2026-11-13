@@ -18,6 +18,20 @@
         <span class="form-ayuda">Sobre el precio de la película. Ej.: 50 → una entrada de $5.000 cuesta $7.500 en VIP.</span>
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="vp">Valor de cada punto al pagar ($)</label>
+        <input id="vp" type="number" min="0.01" step="0.01" [ngModel]="valorPunto()" (ngModelChange)="valorPunto.set(+$event)">
+        <span class="form-ayuda">En el checkout los clientes pueden pagar cualquier entrada o producto con puntos.
+          Ej.: 1 → 1.000 puntos cubren $1.000. Si no alcanzan, el resto se paga con tarjeta o efectivo.</span>
+      </div>
+      <div class="form-group">
+        <label for="mt">Minutos de cada turno de la lista de espera</label>
+        <input id="mt" type="number" min="1" step="1" [ngModel]="minutosTurno()" (ngModelChange)="minutosTurno.set(+$event)">
+        <span class="form-ayuda">Cuando se liberan butacas de una función agotada, el primero de la lista tiene este tiempo para comprar.
+          Si no compra o la rechaza, el turno pasa al siguiente.</span>
+      </div>
+    </div>
 
     <h3 style="margin-top: 0.5rem;">Productos del candy canjeables</h3>
     <span class="form-ayuda">Poné 0 para que un producto no se pueda canjear.</span>

@@ -57,9 +57,12 @@ export class CandyComponent implements OnInit {
   /** Pestaña "Candy Bar" sola (sin película): /candy */
   soloCandy = signal<boolean>(false);
 
-  /** En modo solo candy no se ofrecen los combos que incluyen entrada. */
-  combosVisibles = computed(() =>
-    this.soloCandy() ? this.combos().filter(c => !c.incluyeEntrada) : this.combos());
+  /**
+   * Se muestran todos los combos, también en la pestaña Candy Bar sin entrada.
+   * Un combo con entrada necesita película, función y butaca: desde /candy el botón
+   * lleva a elegirlas (ver elegirFuncionParaCombo) y el combo queda en el pedido.
+   */
+  combosVisibles = computed(() => this.combos());
 
   productosFiltrados = computed(() => {
     const cat = this.categoriaSeleccionada();
@@ -205,6 +208,26 @@ export class CandyComponent implements OnInit {
       else nuevo[k]--;
       return nuevo;
     });
+  }
+
+  /**
+   * Combo con entrada pedido desde /candy: guarda el combo (y lo demás que haya
+   * elegido) en el pedido y lleva a la cartelera para elegir película, función y butaca.
+   * Al llegar al paso Confitería, el carrito ya tiene el combo cargado.
+   */
+  elegirFuncionParaCombo(p: ProductoCandy): void {
+    const k = this.clave(p);
+    const carrito = { ...this.carrito(), [k]: Math.max(1, this.carrito()[k] || 0) };
+    const items = Object.entries(carrito).flatMap(([clave, cantidad]) => {
+      const item = this.todos().find(x => this.clave(x) === clave);
+      return item ? [{
+        id: item.id, tipo: item.tipo, nombre: item.nombre, cantidad,
+        precioUnitario: item.precio, incluyeEntrada: item.incluyeEntrada
+      }] : [];
+    });
+    this.reservaService.combos.set(items);
+    this.reservaService.soloCandy.set(false);
+    this.router.navigate(['/']);
   }
 
   irAlPago(): void {

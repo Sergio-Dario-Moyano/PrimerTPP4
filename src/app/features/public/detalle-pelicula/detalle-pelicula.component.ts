@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
+import { DuracionPipe } from '../../../shared/pipes/duracion.pipe';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe, DecimalPipe } from '@angular/common';
 
@@ -7,7 +8,7 @@ import { SupabaseService } from '../../../core/services/supabase';
 import { PeliculaService } from '../../../core/services/pelicula.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModalService } from '../../../core/services/modal.service';
-import { ReseniaService } from '../../../core/services/resenia.service';
+import { ReseniaService, EstadoResenaTipo, mensajeEstadoResena } from '../../../core/services/resenia.service';
 
 import { Pelicula } from '../../../core/models/Pelicula.model';
 import { Resena } from '../../../core/models/Resenia.model';
@@ -15,7 +16,7 @@ import { RawPelicula } from '../../../core/models/RawPelicula.model';
 import { FuncionPelicula } from '../../../core/models/Funcion.model';
 import { FuncionesPeliculaComponent } from '../../../shared/components/funciones-pelicula/funciones-pelicula.component';
 
-type EstadoResenaType = 'cargando' | 'puede_comentar' | 'ya_comentada' | 'no_vista' | 'no_logueado';
+type EstadoResenaType = 'cargando' | EstadoResenaTipo;
 
 import { ventaAbierta, enPreventa } from '../../../core/utils/precios';
 import { desdeBD } from '../../../shared/utils/fechas';
@@ -24,7 +25,7 @@ import { ReservaService } from '../../../core/services/reserva.service';
 @Component({
   selector: 'app-detalle-pelicula',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, FuncionesPeliculaComponent],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, RouterLink, FuncionesPeliculaComponent, DuracionPipe],
   templateUrl: './detalle-pelicula.component.html',
   styleUrls: ['./detalle-pelicula.component.css']
 })
@@ -53,6 +54,8 @@ export class DetallePeliculaComponent implements OnInit {
   enviando = signal<boolean>(false);
 
   estadoResena = signal<EstadoResenaType>('cargando');
+  /** Mensaje cuando la entrada está validada pero la función no terminó. */
+  mensajeResena = signal('');
 
   estrellasArray = [1, 2, 3, 4, 5];
 
@@ -122,6 +125,7 @@ export class DetallePeliculaComponent implements OnInit {
       this.resenas.set(resenasData as Resena[]);
       this.funciones.set((funcionesData.data as FuncionPelicula[]) || []);
       this.estadoResena.set(estadoResenaData.estado as EstadoResenaType);
+      this.mensajeResena.set(mensajeEstadoResena(estadoResenaData));
 
     } catch (error) {
       console.error('Error al cargar detalle:', error);

@@ -172,38 +172,83 @@ export class AdminRolesComponent implements OnInit {
     this.resultados.set((data ?? []) as Usuario[]);
   }
 
-  async asignar(u: Usuario, cambios: { rol?: string; rol_id?: string | null }): Promise<void> {
-    const { data: auth } = await this.supabase.auth.getUser();
-    if (u.id === auth?.user?.id && cambios.rol && cambios.rol !== 'admin') {
-      this.mensajeError.set('No podés quitarte a vos mismo el rol de administrador.');
-      return;
-    }
+  // Cambios elegidos en los selects que todavía no se guardaron (clave: id del usuario)
+  pendientes = signal<Record<string, { rol: string; rol_id: string | null }>>({});
+  guardando = signal<string | null>(null);
 
-    const { error } = await this.supabase.from('perfiles').update(cambios).eq('id', u.id);
-    if (error) { this.mensajeError.set(error.message); return; }
+  /** Valor que muestra la fila: el pendiente si lo hay, si no el guardado. */
+  valorFila(u: Usuario): { rol: string; rol_id: string | null } {
+    return this.pendientes()[u.id] ?? { rol: u.rol, rol_id: u.rol_id };
+  }
 
-    const quien = `${u.nombre} ${u.apellido}`.trim() || u.email;
-    const detalle = cambios.rol !== undefined
-      ? `rol base: ${u.rol} → ${cambios.rol}`
-      : `rol configurable: ${this.nombreRol()(u.rol_id)} → ${this.nombreRol()(cambios.rol_id ?? null)}`;
-    await this.log.registrar('ASIGNAR_ROL', 'perfiles', u.id, `${quien}: ${detalle}`);
-
-    // Actualizamos la vista
-    const actualizar = (lista: Usuario[]) => lista.map(x => x.id === u.id ? { ...x, ...cambios } as Usuario : x);
-    this.resultados.update(actualizar);
-    this.ok(`Permisos de ${quien} actualizados.`);
-    await this.cargarUsuariosConRol();
-
-    // Si me cambié a mí mismo, recargo mis permisos
-    if (u.id === auth?.user?.id) await this.permisosService.cargarPara(u.id, true);
+  tienePendiente(u: Usuario): boolean {
+    const p = this.pendientes()[u.id];
+    return !!p && (p.rol !== u.rol || p.rol_id !== u.rol_id);
   }
 
   onRolBase(u: Usuario, e: Event): void {
-    this.asignar(u, { rol: (e.target as HTMLSelectElement).value });
+    this.marcarPendiente(u, { rol: (e.target as HTMLSelectElement).value });
   }
 
   onRolConfig(u: Usuario, e: Event): void {
     const valor = (e.target as HTMLSelectElement).value;
-    this.asignar(u, { rol_id: valor || null });
+    this.marcarPendiente(u, { rol_id: valor || null });
+  }
+
+  private marcarPendiente(u: Usuario, cambio: Partial<{ rol: string; rol_id: string | null }>): void {
+    this.mensajeExito.set('');
+    this.pendientes.update(p => ({ ...p, [u.id]: { ...this.valorFila(u), ...cambio } }));
+  }
+
+  descartar(u: Usuario): void {
+    this.pendientes.update(p => { const { [u.id]: _, ...resto } = p; return resto; });
+  }
+
+  /**
+   * Guarda el rol con la RPC asignar_rol (migración 004). Un update directo sobre
+   * "perfiles" no sirve: RLS lo bloquea sin dar error y el cambio no queda guardado.
+   * La RPC verifica en la base que quien guarda sea administrador y devuelve
+   * la fila tal como quedó, así lo que se muestra es lo que realmente se guardó.
+   */
+  async guardar(u: Usuario): Promise<void> {
+    const cambios = this.pendientes()[u.id];
+    if (!cambios) return;
+    this.mensajeError.set('');
+
+    const { data: auth } = await this.supabase.auth.getUser();
+    if (u.id === auth?.user?.id && cambios.rol !== 'admin') {
+      this.mensajeError.set('No podés quitarte a vos mismo el rol de administrador.');
+      return;
+    }
+
+    this.guardando.set(u.id);
+    const { data, error } = await this.supabase.rpc('asignar_rol', {
+      p_usuario: u.id, p_rol: cambios.rol, p_rol_id: cambios.rol_id
+    });
+    this.guardando.set(null);
+
+    if (error || !data) {
+      this.mensajeError.set(error?.message ?? 'No se pudo guardar el cambio.');
+      return;
+    }
+
+    const guardado = data as { id: string; rol: string; rol_id: string | null };
+    const quien = `${u.nombre} ${u.apellido}`.trim() || u.email;
+    const detalle: string[] = [];
+    if (guardado.rol !== u.rol) detalle.push(`rol base: ${u.rol} → ${guardado.rol}`);
+    if (guardado.rol_id !== u.rol_id) {
+      detalle.push(`rol configurable: ${this.nombreRol()(u.rol_id)} → ${this.nombreRol()(guardado.rol_id)}`);
+    }
+    await this.log.registrar('ASIGNAR_ROL', 'perfiles', u.id, `${quien}: ${detalle.join('; ') || 'sin cambios'}`);
+
+    const actualizar = (lista: Usuario[]) =>
+      lista.map(x => x.id === u.id ? { ...x, rol: guardado.rol, rol_id: guardado.rol_id } : x);
+    this.resultados.update(actualizar);
+    this.descartar(u);
+    await this.cargarUsuariosConRol();
+    this.ok(`Permisos de ${quien} guardados.`);
+
+    // Si me cambié a mí mismo, recargo mis permisos
+    if (u.id === auth?.user?.id) await this.permisosService.cargarPara(u.id, true);
   }
 }

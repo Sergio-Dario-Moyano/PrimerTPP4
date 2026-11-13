@@ -1,5 +1,18 @@
 <main class="cartelera">
 
+  @if (combosPendientes().length > 0) {
+    <div class="aviso-combo" role="status">
+      <span class="aviso-combo__texto">
+        🎟️ Tenés en tu pedido
+        @for (c of combosPendientes(); track c.id; let last = $last) {
+          <strong>{{ c.cantidad }}x {{ c.nombre }}</strong>{{ last ? '' : ', ' }}
+        }
+        . Elegí la película, la función y la butaca: cada combo cubre una entrada general.
+      </span>
+      <button type="button" class="aviso-combo__quitar" (click)="quitarCombosPendientes()">Quitar del pedido</button>
+    </div>
+  }
+
   @if (cargando()) {
     <div class="cartelera__loading">
       <div class="cartelera__spinner"></div>
@@ -26,7 +39,7 @@
             <h1 class="hero__title">{{ peliculaDestacada()!.titulo }}</h1>
 
             <div class="hero__meta">
-              <span>{{ peliculaDestacada()!.duracion }} min</span>
+              <span>{{ peliculaDestacada()!.duracion | duracion }}</span>
               <span class="hero__tag">{{ peliculaDestacada()!.clasificacion }}</span>
               <span>{{ peliculaDestacada()!.generos.join(', ') }}</span>
               <span class="hero__tag">Castellano</span>
@@ -143,7 +156,7 @@
                   <h3 class="movie-card__title">{{ m.titulo }}</h3>
                   <div class="movie-card__meta">
                     <span class="movie-card__genre">{{ m.generos[0] }}</span>
-                    <span class="movie-card__duration">{{ m.duracion }}m</span>
+                    <span class="movie-card__duration">{{ m.duracion | duracion }}</span>
                   </div>
                 </div>
               </button>

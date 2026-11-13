@@ -25,6 +25,8 @@ export class AdminFidelizacionComponent implements OnInit {
 
   puntosEntrada = signal<number>(500);
   recargoVip = signal<number>(50);
+  valorPunto = signal<number>(1);
+  minutosTurno = signal<number>(2);
   productos = signal<ProductoPuntos[]>([]);
   canjesTotales = signal<number>(0);
   puntosCanjeados = signal<number>(0);
@@ -32,19 +34,23 @@ export class AdminFidelizacionComponent implements OnInit {
   mensajeExito = signal('');
   mensajeError = signal('');
 
-  private valoresOriginales = { puntosEntrada: 500, recargoVip: 50 };
+  private valoresOriginales = { puntosEntrada: 500, recargoVip: 50, valorPunto: 1, minutosTurno: 2 };
   private puntosOriginales = new Map<string, number>();
 
   async ngOnInit(): Promise<void> {
-    const [entrada, vip, prods, canjes] = await Promise.all([
+    const [entrada, vip, valorPunto, minutosTurno, prods, canjes] = await Promise.all([
       this.fidelizacion.getConfig('puntos_canje_entrada', 500),
       this.fidelizacion.getConfig('recargo_vip_porcentaje', 50),
+      this.fidelizacion.getConfig('valor_punto_pesos', 1),
+      this.fidelizacion.getConfig('minutos_turno_espera', 2),
       this.supabase.from('productos_candy').select('id, nombre, costo_puntos, activo').order('nombre'),
       this.supabase.from('canjes').select('puntos')
     ]);
     this.puntosEntrada.set(entrada);
     this.recargoVip.set(vip);
-    this.valoresOriginales = { puntosEntrada: entrada, recargoVip: vip };
+    this.valorPunto.set(valorPunto);
+    this.minutosTurno.set(minutosTurno);
+    this.valoresOriginales = { puntosEntrada: entrada, recargoVip: vip, valorPunto, minutosTurno };
     this.productos.set(prods.data ?? []);
     this.puntosOriginales = new Map((prods.data ?? []).map(p => [p.id, p.costo_puntos]));
     this.canjesTotales.set(canjes.data?.length ?? 0);
@@ -59,8 +65,9 @@ export class AdminFidelizacionComponent implements OnInit {
     this.mensajeExito.set('');
     this.mensajeError.set('');
 
-    if (this.puntosEntrada() < 1 || this.recargoVip() < 0 || this.productos().some(p => p.costo_puntos < 0)) {
-      this.mensajeError.set('Los valores no pueden ser negativos.');
+    if (this.puntosEntrada() < 1 || this.recargoVip() < 0 || this.valorPunto() <= 0 || this.minutosTurno() < 1
+        || this.productos().some(p => p.costo_puntos < 0)) {
+      this.mensajeError.set('Los valores no pueden ser negativos, el valor del punto tiene que ser mayor a 0 y el turno de la lista de espera tiene que durar al menos 1 minuto.');
       return;
     }
 
@@ -75,6 +82,16 @@ export class AdminFidelizacionComponent implements OnInit {
         await this.log.registrar('MODIFICAR_PRECIO', 'configuracion', null,
           `Recargo de butacas VIP: ${this.valoresOriginales.recargoVip}% → ${this.recargoVip()}%`);
       }
+      if (this.valorPunto() !== this.valoresOriginales.valorPunto) {
+        await this.fidelizacion.setConfig('valor_punto_pesos', this.valorPunto());
+        await this.log.registrar('MODIFICAR_PRECIO', 'configuracion', null,
+          `Valor de cada punto al pagar: $${this.valoresOriginales.valorPunto} → $${this.valorPunto()}`);
+      }
+      if (this.minutosTurno() !== this.valoresOriginales.minutosTurno) {
+        await this.fidelizacion.setConfig('minutos_turno_espera', this.minutosTurno());
+        await this.log.registrar('MODIFICAR_CONFIG', 'configuracion', null,
+          `Duración del turno de la lista de espera: ${this.valoresOriginales.minutosTurno} → ${this.minutosTurno()} min`);
+      }
       for (const p of this.productos()) {
         const antes = this.puntosOriginales.get(p.id) ?? 0;
         if (antes !== p.costo_puntos) {
@@ -84,7 +101,7 @@ export class AdminFidelizacionComponent implements OnInit {
           this.puntosOriginales.set(p.id, p.costo_puntos);
         }
       }
-      this.valoresOriginales = { puntosEntrada: this.puntosEntrada(), recargoVip: this.recargoVip() };
+      this.valoresOriginales = { puntosEntrada: this.puntosEntrada(), recargoVip: this.recargoVip(), valorPunto: this.valorPunto(), minutosTurno: this.minutosTurno() };
       this.mensajeExito.set('Configuración guardada.');
     } catch (err) {
       this.mensajeError.set(err instanceof Error ? err.message : 'No se pudo guardar.');

@@ -2,7 +2,7 @@
   <h2>Cupones</h2>
   <p class="admin-sub">
     <strong>{{ CODIGO_BIENVENIDA }}</strong> es el cupón de la primera compra de cada usuario registrado: cambiá su porcentaje cuando quieras.
-    Los cupones "solo +50" únicamente los pueden usar clientes de 50 años o más.
+    Los cupones "solo +50" únicamente los pueden usar clientes de más de 50 años.
   </p>
 
   <form [formGroup]="nuevoForm" (ngSubmit)="crear()" class="admin-form">
@@ -20,7 +20,7 @@
       </div>
     </div>
     <label class="checkbox-label">
-      <input type="checkbox" formControlName="solo_mayores_50"> Exclusivo para mayores de 50 años
+      <input type="checkbox" formControlName="solo_mayores_50"> Exclusivo para clientes de más de 50 años
     </label>
     <button type="submit" [disabled]="cargando()">{{ cargando() ? 'Guardando…' : 'Crear cupón' }}</button>
   </form>

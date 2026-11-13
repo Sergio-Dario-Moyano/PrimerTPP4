@@ -4,6 +4,8 @@ export interface CompraInsert {
   cupon_id: string | null;
   total_pagado: number;
   credito_usado: number;
+  puntos_usados: number;
+  monto_puntos: number;
   puntos_ganados: number;
   metodo_pago: string;
   fecha_compra: string;

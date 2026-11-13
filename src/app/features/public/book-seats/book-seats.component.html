@@ -96,28 +96,28 @@
         } @else if (esMiTurno()) {
           <div class="espera espera--turno">
             <strong>🎉 ¡Es tu turno!</strong>
-            <span>Se liberó una butaca para vos. Tenés <span class="espera__reloj">{{ cuentaRegresiva() }}</span> para comprar; después pasa al siguiente de la lista.</span>
+            <span>Se liberaron butacas y el turno es tuyo. Tenés <span class="espera__reloj">{{ cuentaRegresiva() }}</span> para comprar; después el turno pasa al siguiente de la lista.</span>
           </div>
         } @else if (agotada()) {
           <div class="espera">
             <strong>🎟️ Función agotada</strong>
             @if (miLugar(); as lugar) {
               <span>Estás en la lista de espera: posición <strong class="espera__posicion">#{{ lugar.posicion }}</strong> de {{ espera()?.enEspera }}.</span>
-              <span class="espera__ayuda">Te avisamos con una notificación cuando se libere una butaca.</span>
+              @if (espera()?.turnoDeOtro) {
+                <span class="espera__ayuda">Ahora tiene el turno otra persona de la lista. Si no compra en su tiempo, pasa al siguiente.</span>
+              }
+              <span class="espera__ayuda">Te avisamos con una notificación cuando sea tu turno.</span>
               <button type="button" class="espera__boton espera__boton--secundario" (click)="salirDeEspera()">Salir de la lista</button>
             } @else {
               <span>
                 @if (espera()?.enEspera) { Hay {{ espera()?.enEspera }} persona(s) esperando. }
-                Anotate y te avisamos si alguien cancela: vas a tener 15 minutos para comprar.
+                @if (espera()?.turnoDeOtro) { Hay butacas liberadas, pero ahora es el turno de otra persona de la lista. }
+                Anotate y te avisamos cuando sea tu turno: vas a tener {{ minutosTurno() }} minuto(s) para comprar.
               </span>
               <button type="button" class="espera__boton" [disabled]="procesandoEspera()" (click)="anotarmeEnEspera()">
                 {{ procesandoEspera() ? 'Anotando…' : 'Anotarme en la lista de espera' }}
               </button>
             }
-          </div>
-        } @else if ((espera()?.reservadas ?? 0) > 0) {
-          <div class="espera espera--info">
-            <span>⏳ {{ espera()?.reservadas }} butaca(s) reservada(s) por 15 minutos para la lista de espera.</span>
           </div>
         }
 
@@ -145,7 +145,7 @@
           [butacas]="nombresButacas()"
           [entradas]="resumenEntradas()"
           [deshabilitarContinuar]="selected().length === 0 || !!funcionCancelada()"
-          (onContinuar)="confirmarSeleccion()">
+          (continuar)="confirmarSeleccion()">
         </app-resumen-compra>
       </aside>
     </div>

@@ -299,3 +299,17 @@ textarea.campo-invalido {
 .fila-cancelada td { opacity: 0.55; }
 .cancelacion { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.5rem 0; }
 .cancelacion strong { color: #fca5a5; }
+
+/* Roles y Permisos: fila con cambios sin guardar */
+.admin-table tr.fila-pendiente td {
+  background: rgba(245, 179, 1, 0.08);
+}
+
+.admin-table tr.fila-pendiente td:first-child {
+  box-shadow: inset 3px 0 0 #f5b301;
+}
+
+.btn-toggle:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

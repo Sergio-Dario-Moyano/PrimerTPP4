@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ModalService } from '../../../core/services/modal.service';
 import { FidelizacionService, Recompensa, SaldoFidelizacion } from '../../../core/services/fidelizacion.service';
@@ -9,7 +9,7 @@ import { FidelizacionService, Recompensa, SaldoFidelizacion } from '../../../cor
 @Component({
   selector: 'app-puntos',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, RouterLink],
   templateUrl: './puntos.component.html',
   styleUrls: ['./puntos.component.css']
 })
@@ -24,6 +24,8 @@ export class PuntosComponent implements OnInit {
   saldo = signal<SaldoFidelizacion>({ puntos: 0, credito: 0, entradasGratis: 0 });
   recompensas = signal<Recompensa[]>([]);
   canjeando = signal<string | null>(null);
+  /** Pesos que vale cada punto al pagar en el checkout. */
+  valorPunto = signal(1);
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
@@ -33,10 +35,12 @@ export class PuntosComponent implements OnInit {
     const user = this.auth.usuarioActual();
     if (!user) { this.error.set('Iniciá sesión para ver tus puntos.'); this.cargando.set(false); return; }
     try {
-      const [saldo, recompensas] = await Promise.all([
-        this.fidelizacion.getSaldo(user.id), this.fidelizacion.getRecompensas()
+      const [saldo, recompensas, valorPunto] = await Promise.all([
+        this.fidelizacion.getSaldo(user.id), this.fidelizacion.getRecompensas(),
+        this.fidelizacion.getConfig('valor_punto_pesos', 1)
       ]);
       this.saldo.set(saldo);
+      this.valorPunto.set(valorPunto);
       this.recompensas.set(recompensas);
     } catch (err) {
       console.error(err);

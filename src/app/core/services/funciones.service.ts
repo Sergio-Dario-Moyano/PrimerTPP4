@@ -78,23 +78,30 @@ export class FuncionesService {
       }
 
       const fin = new Date(fecha.getTime() + bloqueMin * 60000);
-      const salaId = FuncionesService.buscarSalaLibre(salas, ocupaciones, fecha, fin);
 
-      if (salaId == null) {
-        resultado.rechazadas.push({ fecha, motivo: 'Todas las salas están ocupadas en ese horario' });
-        continue;
+      // La base vuelve a controlar la superposición (trigger del 003). Si rechaza la sala
+      // porque otro admin la ocupó recién, la marcamos ocupada y probamos con la siguiente.
+      let salaId: number | null = null;
+      let nueva: { id: string } | null = null;
+      let motivoRechazo = 'Todas las salas están ocupadas en ese horario';
+      const ocupacionesIntento = [...ocupaciones];
+
+      while ((salaId = FuncionesService.buscarSalaLibre(salas, ocupacionesIntento, fecha, fin)) != null) {
+        const { data, error } = await this.supabase.from('funciones').insert([{
+          pelicula_id: datos.peliculaId,
+          sala_id: salaId,
+          fecha_hora: aTimestampBD(fecha),
+          formato: datos.formato,
+          idioma: datos.idioma
+        }]).select('id').single();
+
+        if (!error) { nueva = data; break; }
+        if (error.code !== 'P0001') { motivoRechazo = error.message; salaId = null; break; }
+        ocupacionesIntento.push({ sala_id: salaId, inicio: fecha, fin });
       }
 
-      const { data: nueva, error } = await this.supabase.from('funciones').insert([{
-        pelicula_id: datos.peliculaId,
-        sala_id: salaId,
-        fecha_hora: aTimestampBD(fecha),
-        formato: datos.formato,
-        idioma: datos.idioma
-      }]).select('id').single();
-
-      if (error) {
-        resultado.rechazadas.push({ fecha, motivo: error.message });
+      if (salaId == null || !nueva) {
+        resultado.rechazadas.push({ fecha, motivo: motivoRechazo });
         continue;
       }
 

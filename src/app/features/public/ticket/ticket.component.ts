@@ -313,9 +313,10 @@ export class TicketComponent implements OnInit {
 
       if (errCompra) throw errCompra;
 
-      // No se devuelve dinero: se acredita todo lo pagado (tarjeta + crédito usado)
-      // como crédito a favor, y se descuentan los puntos que había sumado esa compra.
-      const reintegro = Number(datosCompra.total_pagado ?? 0) + Number(datosCompra.credito_usado ?? 0);
+      // No se devuelve dinero: se acredita todo lo pagado (tarjeta o efectivo + crédito
+      // + lo cubierto con puntos) como crédito a favor, y se descuentan los puntos que había sumado esa compra.
+      const reintegro = Number(datosCompra.total_pagado ?? 0) + Number(datosCompra.credito_usado ?? 0)
+        + Number(datosCompra.monto_puntos ?? 0);
       const { data: perfil } = await supabase
         .from('perfiles').select('credito_favor, puntos_fidelizacion')
         .eq('id', datosCompra.perfil_id!).single();
@@ -327,7 +328,7 @@ export class TicketComponent implements OnInit {
         }).eq('id', datosCompra.perfil_id!);
       }
 
-      // Se liberaron butacas: si la función tiene lista de espera, se avisa al primero (15 min)
+      // Se liberaron butacas: si la función tiene lista de espera, se le da el turno al primero
       const funcionId = this.entradas()[0]?.funcion_id;
       if (funcionId) await this.listaEspera.procesar(funcionId);
 

@@ -42,7 +42,7 @@ Trabajo Práctico N.º 1 — Programación IV.
 - **Perfil**: mis entradas, puntos y beneficios, historial de canjes, cupón de bienvenida y "Mis películas" (póster, fecha y calificación propia).
 - **Cancelación** hasta 2 horas antes de la función, con reintegro como crédito en la cuenta.
 - **Restricción de edad** (+13 / +18): los menores no pueden comprar y el ticket avisa que debe ir un adulto.
-- **Lista de espera** en funciones agotadas: si alguien cancela, el primero de la lista recibe una notificación push y tiene 15 minutos para comprar. En el perfil se ve la posición en cada lista.
+- **Lista de espera** en funciones agotadas: si se liberan butacas, el primero de la lista recibe una notificación push y tiene unos minutos para comprar (configurable desde el admin; 2 por defecto). Hay un solo turno a la vez: si no compra, la rechaza o se le vence el tiempo, el turno pasa al siguiente. En el perfil se ve la posición en cada lista.
 - **Propuestas de películas**: el cliente sugiere una película que no está en cartelera (una propuesta a la vez).
 - **Notificaciones** en la campanita y como push del sistema: lista de espera, función cancelada, propuestas, créditos y estrenos.
 - **Reubicación**: si el cine cancela una función, el total vuelve como crédito y la app ofrece elegir otra función de la misma película.
@@ -72,7 +72,7 @@ Trabajo Práctico N.º 1 — Programación IV.
 
 | Área | Herramienta |
 |---|---|
-| Frontend | **Angular 22**: standalone components, signals, reactive forms, control flow (`@if` / `@for`), lazy loading |
+| Frontend | **Angular 22**: standalone components, signals, reactive forms, control flow (`@if` / `@for`), lazy loading, directivas y pipe propios |
 | Backend | **Supabase**: PostgreSQL, Auth, Realtime, Storage, triggers |
 | PWA | `@angular/service-worker` |
 | Gráficos | Chart.js |
@@ -101,7 +101,8 @@ src/app/
 ├── shared/
 │   ├── components/    navbar, modal, resumen de compra, gráfico de barras,
 │   │                  dropzone de imágenes, avisos PWA, modal de edad
-│   ├── directives/    appMascaraFecha (fechas y horas tipeadas)
+│   ├── directives/    appMascaraFecha, appMascaraTarjeta y ErrorCampo (mensajes de error de formularios)
+│   ├── pipes/         duracion (125 → "2 h 05 min")
 │   └── utils/         fechas (parseo, validadores, conversión a timestamp)
 └── directives/        appAdminAccion
 ```
@@ -163,7 +164,7 @@ Tablas principales (PostgreSQL en Supabase):
 - `actualizar_entradas_vendidas`: mantiene el ranking del Top 3.
 - Índice único parcial `(funcion_id, butaca_id) where estado <> 'cancelada'`: impide vender dos veces la misma butaca.
 - `cancelar_funcion(p_funcion, p_motivo)`: cancelación **atómica** de una función (ver decisión 13).
-- `procesar_listas_espera()`: vence los turnos de más de 15 minutos y avisa al siguiente de cada lista.
+- `procesar_listas_espera()`: vence los turnos terminados y le da el turno al siguiente de cada lista (uno por función a la vez).
 - `butacas_libres(p_funcion)` y `reclamar_creditos()`.
 
 ---
@@ -176,7 +177,7 @@ Tablas principales (PostgreSQL en Supabase):
 
 3. **Un solo código por compra.** El QR y el PIN manual son el mismo `codigo_ticket`, que sirve para la sala y para el candy. Cada sector cambia solo sus propios estados (`entradas` → validada, `detalle_candy` → entregado). Por eso el código funciona una sola vez en cada sector.
 
-4. **Sala automática.** `FuncionesService.buscarSalaLibre` es una función pura: elige la primera sala sin superposición en el intervalo `[inicio, inicio + duración + 30 min)`. En una programación repetida por días, cada función que se crea se suma a las ocupaciones del lote, así que tampoco chocan entre sí.
+4. **Sala automática.** `FuncionesService.buscarSalaLibre` es una función pura: elige la primera sala sin superposición en el intervalo `[inicio, inicio + duración + 30 min)`. En una programación repetida por días, cada función que se crea se suma a las ocupaciones del lote, así que tampoco chocan entre sí. Además, la base repite el control con el trigger `funciones_sin_superposicion` (migración 003): toma un bloqueo por sala para procesar las altas de a una y rechaza cualquier superposición, aunque dos administradores programen al mismo tiempo. Si la base rechaza una sala, Angular prueba con la siguiente libre.
 
 5. **Precios en un solo lugar.** `core/utils/precios.ts` centraliza el precio vigente (normal o preventa), el recargo VIP, los combos con entrada, las entradas gratis y los cargos de servicio. El mapa de butacas, el candy y el checkout usan las mismas funciones.
 
@@ -194,9 +195,9 @@ Tablas principales (PostgreSQL en Supabase):
 
 12. **Roles configurables.** Hay roles base (`cliente`, `empleado_cine`, `empleado_candy`, `admin`) y roles configurables (tabla `roles`), que son una lista de claves de secciones. `PermisosService` arma los permisos efectivos; `permisoGuard('reportes')` protege cada ruta y la barra lateral muestra solo lo permitido. La gestión de roles queda reservada al rol base `admin`.
 
-13. **Cancelación atómica de funciones.** No se hace desde Angular con varias llamadas, porque si una fallara quedaría a medias. Es una función PL/pgSQL (`cancelar_funcion`) que corre en una sola transacción: bloquea la función (`for update`), recorre las compras, acredita el total (lo pagado + el crédito usado, incluido el candy), descuenta los puntos ganados, cancela entradas y candy, notifica, cierra la lista de espera y registra el log. Ante cualquier error lanza una excepción y PostgreSQL revierte todo.
+13. **Cancelación atómica de funciones.** No se hace desde Angular con varias llamadas, porque si una fallara quedaría a medias. Es una función PL/pgSQL (`cancelar_funcion`) que corre en una sola transacción: bloquea la función (`for update`), recorre las compras, acredita el total (lo pagado + el crédito usado, incluido el candy), descuenta los puntos ganados, cancela entradas y candy, notifica, cierra la lista de espera y registra el log. Ante cualquier error lanza una excepción y PostgreSQL revierte todo. Como corre con `security definer`, solo se puede ejecutar a través de un envoltorio que verifica que el usuario tenga permiso sobre la sección Funciones (`tiene_permiso('funciones')`, migración 003); los usuarios anónimos no pueden llamarla.
 
-14. **Lista de espera con turnos de 15 minutos.** La lógica vive en `procesar_listas_espera`. Cuando se liberan butacas, avisa al primero (`for update skip locked`) y le reserva una butaca hasta `vence_en`. En el mapa, las butacas reservadas no las puede tomar nadie más. Se ejecuta al cancelar una compra, al abrir el mapa o el perfil, y cada minuto con `pg_cron`.
+14. **Lista de espera con un turno a la vez.** La lógica vive en `procesar_listas_espera` (migración 006). Cuando hay butacas libres y nadie tiene un turno vigente, le da el turno al primero de la lista por los minutos configurados en el admin (`minutos_turno_espera`, 2 por defecto). Mientras dura el turno, las butacas liberadas son solo para esa persona. Si compra, rechaza o se le vence el tiempo, el turno pasa al siguiente. Un bloqueo por función (`pg_advisory_xact_lock`) evita que dos pantallas que procesan la lista al mismo tiempo den dos turnos. Se ejecuta al cancelar o hacer una compra, al abrir el mapa o el perfil, al vencer un turno en pantalla y cada minuto con `pg_cron`.
 
 15. **Notificaciones push.** La base inserta en `notificaciones`. Con la app abierta, Supabase Realtime las muestra en la campanita y como notificación del sistema. Con la app cerrada, un Database Webhook dispara la Edge Function `enviar-push`, que manda Web Push (VAPID) a los dispositivos suscriptos con `SwPush`.
 
@@ -217,7 +218,16 @@ ng serve
 
 Abrir http://localhost:4200.
 
-**Base de datos:** en Supabase → SQL Editor, ejecutar **una sola vez** `supabase/migraciones/001_correcciones_tp.sql`. Agrega las columnas y tablas nuevas, el bucket de imágenes, el trigger del Top 3 y el índice de butacas. No borra datos.
+**Base de datos:** en Supabase → SQL Editor, ejecutar en este orden:
+
+1. `supabase/migraciones/001_esquema_base.sql`: tablas principales, el bucket de imágenes, el trigger del Top 3 y el índice de butacas.
+2. `supabase/migraciones/002_nuevos_requerimientos.sql`: roles, propuestas, notificaciones, lista de espera y cancelación de funciones.
+3. `supabase/migraciones/003_seguridad_y_superposicion.sql`: control de permisos en `cancelar_funcion` y trigger que impide funciones superpuestas en una misma sala.
+4. `supabase/migraciones/004_asignar_roles.sql`: función `asignar_rol` para guardar roles desde Admin → Roles y Permisos (verifica que quien asigna sea administrador) y trigger que impide que un usuario se cambie el rol por su cuenta.
+5. `supabase/migraciones/005_pago_con_puntos_y_credito.sql`: columnas para registrar los puntos usados en cada compra y cancelación de funciones que también devuelve lo pagado con puntos.
+6. `supabase/migraciones/006_lista_espera_turnos.sql`: la lista de espera da un solo turno a la vez por función; el turno dura los minutos configurados en el admin (2 por defecto) y, si la persona no compra, rechaza o se le vence el tiempo, pasa al siguiente.
+
+Los scripts no borran datos y se pueden volver a ejecutar.
 
 | Script | Qué hace |
 |---|---|

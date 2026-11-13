@@ -18,7 +18,7 @@
           <h1 class="detalle-cabecera__titulo">{{ pelicula()!.titulo }}</h1>
 
           <div class="detalle-cabecera__tags">
-            <span class="detalle-cabecera__tag detalle-cabecera__tag--duracion">{{ pelicula()!.duracion }} min</span>
+            <span class="detalle-cabecera__tag detalle-cabecera__tag--duracion">{{ pelicula()!.duracion | duracion }}</span>
             <span class="detalle-cabecera__tag detalle-cabecera__tag--edad">{{ pelicula()!.clasificacion }}</span>
             <span class="detalle-cabecera__tag detalle-cabecera__tag--genero">{{ pelicula()!.generos.join(', ') }}</span>
           </div>
@@ -59,7 +59,7 @@
         }
         <app-funciones-pelicula
           [funciones]="funciones()"
-          (onSeleccionar)="navegarASala($event)">
+          (seleccionar)="navegarASala($event)">
         </app-funciones-pelicula>
       } @else {
         <p class="aviso-preventa aviso-preventa--cerrada">
@@ -101,6 +101,11 @@
           } @else if (estadoResena() === 'ya_comentada') {
             <div class="mensaje-estado mensaje-estado--exito">
               <p>Ya dejaste tu opinión sobre esta película. ¡Gracias!</p>
+            </div>
+
+          } @else if (estadoResena() === 'en_curso') {
+            <div class="mensaje-estado mensaje-estado--pendiente">
+              <p>{{ mensajeResena() }}</p>
             </div>
 
           } @else if (estadoResena() === 'no_vista') {

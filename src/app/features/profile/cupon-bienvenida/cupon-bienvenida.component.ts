@@ -44,7 +44,7 @@ export class CuponBienvenidaComponent implements OnInit {
           if (m < 0 || (m === 0 && hoy.getDate() < fnac.getDate())) {
             edad--;
           }
-          esMayorDe50 = edad >= 50;
+          esMayorDe50 = edad > 50;
         }
       }
 

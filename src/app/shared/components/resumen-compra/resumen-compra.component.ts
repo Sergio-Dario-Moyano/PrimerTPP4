@@ -26,7 +26,7 @@ export class ResumenCompraComponent {
   deshabilitarContinuar = input<boolean>(false);
   textoBoton = input<string>('Continuar');
 
-  onContinuar = output<void>();
+  continuar = output<void>();
 
   granTotal = computed(() => {
     const subtotalEntradas = this.entradas().reduce((sum, e) => sum + e.precioTotal, 0);

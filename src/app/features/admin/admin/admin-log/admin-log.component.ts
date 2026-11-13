@@ -19,7 +19,9 @@ const ETIQUETAS: Record<string, string> = {
   CREAR_PRODUCTO: 'Creó producto', MODIFICAR_PRODUCTO: 'Editó producto',
   CREAR_COMBO: 'Creó combo', MODIFICAR_COMBO: 'Editó combo',
   CREAR_CATEGORIA: 'Creó categoría', ELIMINAR_CATEGORIA: 'Eliminó categoría',
-  VALIDAR_ENTRADA: 'Validó QR (sala)', VALIDAR_CANDY: 'Validó QR (candy)'
+  VALIDAR_ENTRADA: 'Validó QR (sala)', VALIDAR_CANDY: 'Validó QR (candy)',
+  MODIFICAR_CONFIG: 'Cambió configuración', ASIGNAR_ROL: 'Asignó rol', ELIMINAR_ROL: 'Eliminó rol',
+  ACEPTAR_PROPUESTA: 'Aceptó propuesta', RECHAZAR_PROPUESTA: 'Rechazó propuesta', CANCELAR_FUNCION: 'Canceló función'
 };
 
 /** Log de actividad (mail 10/03): quién hizo qué y cuándo. */

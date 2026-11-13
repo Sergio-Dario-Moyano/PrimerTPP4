@@ -1,4 +1,4 @@
-import { Directive, ElementRef, HostListener, Renderer2, inject, input } from '@angular/core';
+import { Directive, ElementRef, HostListener, Renderer2, inject } from '@angular/core';
 
 @Directive({
   selector: '[appAdminAccion]',
@@ -7,8 +7,6 @@ import { Directive, ElementRef, HostListener, Renderer2, inject, input } from '@
 export class AdminAccionDirective {
   private el = inject(ElementRef);
   private renderer = inject(Renderer2);
-
-  tipoAccion = input<string>('pelicula');
 
   constructor() {
     this.renderer.setStyle(this.el.nativeElement, 'transition', 'all 0.3s ease');

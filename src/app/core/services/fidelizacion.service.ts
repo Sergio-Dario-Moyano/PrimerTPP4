@@ -85,6 +85,8 @@ export class FidelizacionService {
         perfil_id: perfilId,
         total_pagado: 0,
         credito_usado: 0,
+        puntos_usados: recompensa.costo,
+        monto_puntos: 0,
         puntos_ganados: 0,
         metodo_pago: 'puntos',
         estado: 'completada',

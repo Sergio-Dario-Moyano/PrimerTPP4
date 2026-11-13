@@ -6,6 +6,7 @@ import { ReservaService } from '../../../core/services/reserva.service';
 import { SupabaseService } from '../../../core/services/supabase';
 import { ModalService } from '../../../core/services/modal.service';
 import { ListaEsperaService } from '../../../core/services/lista-espera.service';
+import { FidelizacionService } from '../../../core/services/fidelizacion.service';
 
 import { CompraInsert } from '../../../core/models/Compra.model';
 import { EntradaInsert } from '../../../core/models/Entrada.model';
@@ -29,7 +30,11 @@ interface PerfilCheckout {
  *   − entradas cubiertas por combos con entrada / entradas gratis (canje de puntos)
  *   − cupón (%)
  *   − crédito a favor (cancelaciones anteriores)
- *   = total a pagar con tarjeta o en efectivo  →  1 punto por cada peso pagado
+ *   − puntos (cada punto vale "valor_punto_pesos", configurable en el admin)
+ *   = resto a pagar con tarjeta o en efectivo  →  1 punto por cada peso pagado
+ *
+ * El crédito y los puntos sirven para cualquier entrada o producto. Si no alcanzan,
+ * se descuentan igual y el faltante se cobra con tarjeta o efectivo.
  */
 @Component({
   selector: 'app-checkout',
@@ -45,6 +50,7 @@ export class CheckoutComponent implements OnInit {
   private supabase = inject(SupabaseService).client;
   private modalService = inject(ModalService);
   private listaEspera = inject(ListaEsperaService);
+  private fidelizacion = inject(FidelizacionService);
 
   checkoutForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(3)]],
@@ -70,6 +76,9 @@ export class CheckoutComponent implements OnInit {
   usuarioId = signal<string | null>(null);
   perfil = signal<PerfilCheckout | null>(null);
   usarCredito = signal(false);
+  usarPuntos = signal(false);
+  /** Pesos que vale cada punto al pagar (configuración del admin). */
+  valorPunto = signal(1);
   entradasGratisAUsar = signal(0);
 
   butacas = computed(() => this.reservaService.butacas());
@@ -104,7 +113,23 @@ export class CheckoutComponent implements OnInit {
   creditoAplicado = computed(() =>
     this.usarCredito() ? Math.min(this.creditoDisponible(), this.subtotalGeneral() - this.montoDescuento()) : 0);
 
-  totalPagar = computed(() => Math.max(0, this.subtotalGeneral() - this.montoDescuento() - this.creditoAplicado()));
+  /** Lo que queda después del crédito: es lo que pueden cubrir los puntos. */
+  restanteTrasCredito = computed(() =>
+    Math.max(0, this.subtotalGeneral() - this.montoDescuento() - this.creditoAplicado()));
+
+  puntosDisponibles = computed(() => Number(this.perfil()?.puntos_fidelizacion ?? 0));
+  /** Pesos que valen todos los puntos del usuario. */
+  valorPuntosDisponibles = computed(() => this.puntosDisponibles() * this.valorPunto());
+
+  /** Puntos que se usan: los necesarios para cubrir el resto, o todos si no alcanzan. */
+  puntosAplicados = computed(() => {
+    const restante = this.restanteTrasCredito();
+    if (!this.usarPuntos() || restante <= 0 || this.valorPunto() <= 0) return 0;
+    return Math.min(this.puntosDisponibles(), Math.ceil(restante / this.valorPunto()));
+  });
+  montoPuntos = computed(() => Math.min(this.restanteTrasCredito(), this.puntosAplicados() * this.valorPunto()));
+
+  totalPagar = computed(() => Math.max(0, this.restanteTrasCredito() - this.montoPuntos()));
   puntosAGanar = computed(() => this.usuarioId() ? Math.floor(this.totalPagar()) : 0);
 
   /** Hay un saldo a pagar (si el crédito / canjes cubren todo, no se elige medio de pago). */
@@ -126,6 +151,8 @@ export class CheckoutComponent implements OnInit {
 
     this.usuarioId.set(user.id);
     this.checkoutForm.patchValue({ email: user.email ?? '' });
+
+    this.valorPunto.set(await this.fidelizacion.getConfig('valor_punto_pesos', 1));
 
     const { data: perfil } = await this.supabase
       .from('perfiles')
@@ -199,8 +226,8 @@ export class CheckoutComponent implements OnInit {
 
       if (cupon.solo_mayores_50) {
         const nacimiento = this.perfil()?.fecha_nacimiento;
-        if (!nacimiento || this.calcularEdad(nacimiento) < 50) {
-          throw new Error('Este cupón es exclusivo para clientes de 50 años o más.');
+        if (!nacimiento || this.calcularEdad(nacimiento) <= 50) {
+          throw new Error('Este cupón es exclusivo para clientes de más de 50 años.');
         }
       }
 
@@ -249,17 +276,24 @@ export class CheckoutComponent implements OnInit {
       const usuarioId = this.usuarioId();
       const nombreTitular = c.nombre.value;
       const credito = this.creditoAplicado();
+      const puntosUsados = this.puntosAplicados();
+      const montoPuntos = this.montoPuntos();
 
-      const medio = this.medioPago(); // 'tarjeta' | 'efectivo'
-      const metodo = credito > 0 && this.totalPagar() > 0 ? `${medio}+credito`
-        : credito > 0 ? 'credito'
-        : this.totalPagar() > 0 ? medio : 'canje';
+      // Ej.: "credito+puntos+tarjeta". Si nada tuvo costo (todo cubierto por combos o canjes): "canje"
+      const partes = [
+        credito > 0 ? 'credito' : null,
+        puntosUsados > 0 ? 'puntos' : null,
+        this.totalPagar() > 0 ? this.medioPago() : null
+      ].filter(Boolean);
+      const metodo = partes.length ? partes.join('+') : 'canje';
 
       const payloadCompra: CompraInsert = {
         perfil_id: usuarioId,
         cupon_id: this.cuponId(),
         total_pagado: this.totalPagar(),
         credito_usado: credito,
+        puntos_usados: puntosUsados,
+        monto_puntos: montoPuntos,
         puntos_ganados: this.puntosAGanar(),
         metodo_pago: metodo,
         fecha_compra: new Date().toISOString(),
@@ -309,11 +343,11 @@ export class CheckoutComponent implements OnInit {
         if (errorCandy) throw new Error(`Error en Candy: ${errorCandy.message}`);
       }
 
-      // Perfil: + puntos ganados, − crédito usado, − entradas gratis usadas
+      // Perfil: + puntos ganados − puntos usados, − crédito usado, − entradas gratis usadas
       const perfil = this.perfil();
       if (usuarioId && perfil) {
         await this.supabase.from('perfiles').update({
-          puntos_fidelizacion: (perfil.puntos_fidelizacion ?? 0) + this.puntosAGanar(),
+          puntos_fidelizacion: (perfil.puntos_fidelizacion ?? 0) + this.puntosAGanar() - puntosUsados,
           credito_favor: Number(perfil.credito_favor ?? 0) - credito,
           entradas_gratis: (perfil.entradas_gratis ?? 0) - this.entradasGratisAUsar()
         }).eq('id', usuarioId);
@@ -321,10 +355,13 @@ export class CheckoutComponent implements OnInit {
 
       // Si estaba en la lista de espera de esta función, sale de la lista (y libera su reserva)
       if (usuarioId && funcionId) await this.listaEspera.marcarCompra(funcionId, usuarioId);
+      // Si quedaron butacas liberadas sin comprar, el turno pasa al siguiente de la lista
+      if (funcionId) await this.listaEspera.procesar(funcionId);
 
       this.checkoutForm.reset();
       this.cuponControl.reset();
       this.medioPago.set('tarjeta');
+      this.usarPuntos.set(false);
       this.reservaService.limpiarReserva();
       this.router.navigate(['/ticket', nuevaCompra.id]);
     } catch (error) {

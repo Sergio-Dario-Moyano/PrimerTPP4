@@ -13,7 +13,7 @@ export class FuncionesPeliculaComponent {
 
   // Inputs y Outputs fuertemente tipados
   funciones = input<FuncionPelicula[]>([]);
-  onSeleccionar = output<FuncionPelicula & { sala: string }>();
+  seleccionar = output<FuncionPelicula & { sala: string }>();
 
   fechaSeleccionada = signal<string | null>(null);
 
@@ -98,6 +98,6 @@ export class FuncionesPeliculaComponent {
       ...funcion,
       sala: `Sala ${funcion.sala_id}`
     };
-    this.onSeleccionar.emit(funcionAdaptada);
+    this.seleccionar.emit(funcionAdaptada);
   }
 }

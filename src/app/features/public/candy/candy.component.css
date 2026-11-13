@@ -245,7 +245,7 @@
 
   .candy__summary {
     position: sticky;
-    top: 2rem; /* El resumen se queda pegado al hacer scroll hacia abajo */
+    top: 5rem; /* El resumen se queda pegado al hacer scroll hacia abajo */
   }
 }
 

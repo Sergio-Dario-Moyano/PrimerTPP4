@@ -72,8 +72,10 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
   /** Butacas que no están vendidas (libres o elegidas por mí). */
   libres = computed(() => this.seats().filter(s => s.status !== 'occupied').length);
-  /** Libres menos las reservadas a otras personas avisadas de la lista. */
-  disponibles = computed(() => Math.max(0, this.libres() - (this.espera()?.reservadas ?? 0)));
+  /** Si otra persona de la lista tiene el turno, las butacas liberadas son solo para ella. */
+  disponibles = computed(() => this.espera()?.turnoDeOtro ? 0 : this.libres());
+  /** Minutos de cada turno de la lista de espera (configurable en el admin). */
+  minutosTurno = signal<number>(2);
   miLugar = computed(() => this.espera()?.miLugar ?? null);
   esMiTurno = computed(() => this.miLugar()?.estado === 'notificado');
   agotada = computed(() => !this.cargando() && this.seats().length > 0 && this.disponibles() === 0);
@@ -228,12 +230,13 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
       this.seats.set(allSeats);
       this.suscribirAsientosEnTiempoReal();
+      this.minutosTurno.set(await this.listaEspera.minutosTurno());
       await this.refrescarEspera();
       this.reloj = setInterval(() => {
         this.ahora.set(Date.now());
-        // Al vencer mi turno (o el de otro) se recalcula la lista
-        const vence = this.miLugar()?.vence_en;
-        if (vence && desdeUtc(vence).getTime() < Date.now()) this.refrescarEspera();
+        // Al vencer el turno vigente (mío o de otro) se procesa la lista: pasa al siguiente
+        const vence = this.espera()?.turnoVence;
+        if (vence && desdeUtc(vence).getTime() < Date.now() && !this.refrescoPendiente) this.programarRefrescoEspera();
       }, 1000);
 
     } catch (error) {
@@ -385,7 +388,10 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
   /** Varios cambios seguidos en tiempo real → un solo refresco. */
   private programarRefrescoEspera(): void {
     if (this.refrescoPendiente) clearTimeout(this.refrescoPendiente);
-    this.refrescoPendiente = setTimeout(() => this.refrescarEspera(), 800);
+    this.refrescoPendiente = setTimeout(async () => {
+      await this.refrescarEspera();
+      this.refrescoPendiente = null;
+    }, 800);
   }
 
   async anotarmeEnEspera(): Promise<void> {
@@ -400,7 +406,7 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
       await this.listaEspera.anotarme(this.funcionIdReal()!, user.id);
       await this.refrescarEspera();
       this.modalService.open('¡Te anotaste!',
-        'Si alguien cancela, te avisamos con una notificación y vas a tener 15 minutos para comprar. Activá las notificaciones desde la campanita 🔔.',
+        `Cuando se liberen butacas y te toque, te avisamos con una notificación y vas a tener ${this.minutosTurno()} minuto(s) para comprar. Activá las notificaciones desde la campanita 🔔.`,
         'success');
     } catch (err) {
       this.modalService.open('No se pudo', err instanceof Error ? err.message : 'Error al anotarte.', 'error');
@@ -423,8 +429,8 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
     if (seat?.status === 'free' && this.selected().length >= this.disponibles()) {
       this.modalService.open('Sin butacas disponibles',
         this.disponibles() === 0
-          ? 'Las butacas libres están reservadas para la lista de espera. Anotate para que te avisemos.'
-          : `Solo podés elegir ${this.disponibles()} butaca(s): el resto está reservado para la lista de espera.`,
+          ? 'Las butacas libres están reservadas para quien tiene el turno de la lista de espera. Anotate para que te avisemos.'
+          : `Solo podés elegir ${this.disponibles()} butaca(s).`,
         'info');
       return;
     }

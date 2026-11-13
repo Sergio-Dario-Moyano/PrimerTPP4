@@ -11,8 +11,13 @@ export interface MiLugarEnEspera {
 }
 
 export interface EstadoEsperaFuncion {
-  /** Avisados con turno vigente (sus butacas están reservadas por 15 minutos). */
-  reservadas: number;
+  /**
+   * Otra persona de la lista tiene el turno vigente: mientras dure, las butacas
+   * liberadas son solo para ella (nadie más puede elegirlas).
+   */
+  turnoDeOtro: boolean;
+  /** Vencimiento del turno vigente (de quien sea), para refrescar al terminar. */
+  turnoVence: string | null;
   /** Personas anotadas (esperando + avisados). */
   enEspera: number;
   /** Mi lugar en la lista, si estoy anotado. */
@@ -38,14 +43,24 @@ export const desdeUtc = (valor: string): Date => new Date(valor.endsWith('Z') ? 
 
 /**
  * Lista de espera para funciones agotadas (mail "RPP final").
- * El orden es por fecha de inscripción. Cuando se libera una butaca, la función
- * SQL procesar_listas_espera avisa al primero y le reserva 15 minutos.
+ * El orden es por fecha de inscripción y hay UN turno a la vez por función:
+ * cuando se liberan butacas, procesar_listas_espera (SQL, migración 006) avisa al
+ * primero y le da unos minutos (configurables, 2 por defecto) para comprar. Si compra,
+ * rechaza o se le vence el tiempo, el turno pasa al siguiente.
  */
 @Service()
 export class ListaEsperaService {
   private supabase = inject(SupabaseService).client;
 
-  /** Vence turnos pasados de 15 min y avisa a los siguientes. */
+  /** Minutos que dura cada turno (configuración del admin). */
+  async minutosTurno(): Promise<number> {
+    const { data } = await this.supabase.from('configuracion').select('valor')
+      .eq('clave', 'minutos_turno_espera').maybeSingle();
+    const n = Number(data?.valor);
+    return n > 0 ? n : 2;
+  }
+
+  /** Vence los turnos terminados y le da el turno al siguiente de cada lista. */
   async procesar(funcionId?: string): Promise<void> {
     const { error } = await this.supabase.rpc('procesar_listas_espera', funcionId ? { p_funcion: funcionId } : {});
     if (error) console.error('Error procesando listas de espera:', error);
@@ -63,9 +78,11 @@ export class ListaEsperaService {
     const ahora = Date.now();
     const vigentes = filas.filter(f => f.estado === 'esperando' || (f.vence_en && desdeUtc(f.vence_en).getTime() > ahora));
     const mia = userId ? vigentes.find(f => f.perfil_id === userId) : undefined;
+    const turno = vigentes.find(f => f.estado === 'notificado') ?? null;
 
     return {
-      reservadas: vigentes.filter(f => f.estado === 'notificado' && f.perfil_id !== userId).length,
+      turnoDeOtro: !!turno && turno.perfil_id !== userId,
+      turnoVence: turno?.vence_en ?? null,
       enEspera: vigentes.length,
       miLugar: mia ? {
         id: mia.id,

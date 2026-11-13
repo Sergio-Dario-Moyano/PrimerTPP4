@@ -175,7 +175,7 @@
 /* ----- Crédito, entradas gratis y catálogo de canjes ----- */
 .puntos__subtitle--chico { font-size: 1.05rem; margin-top: 2rem; }
 
-.beneficios { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1.25rem; }
+.beneficios { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
 .beneficios__item {
   display: flex; flex-direction: column; gap: 0.25rem;
   background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1rem;
@@ -199,3 +199,15 @@
   background: #f5b301; color: #000; font-weight: 700; cursor: pointer;
 }
 .recompensa__btn:disabled { background: #333; color: #888; cursor: not-allowed; }
+
+/* Usar crédito y puntos como medio de pago */
+.usar-saldo {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(245, 179, 1, 0.35);
+  border-radius: 12px;
+  background: rgba(245, 179, 1, 0.06);
+}
+.usar-saldo p { margin: 0 0 0.75rem; line-height: 1.5; }
+.usar-saldo__acciones { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.usar-saldo__acciones .recompensa__btn { width: auto; text-decoration: none; display: inline-block; text-align: center; }

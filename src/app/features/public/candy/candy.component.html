@@ -34,7 +34,9 @@
             <div class="product-card__actions">
               <span class="product-card__price">$ {{ prod.precio | number:'1.0-0' }}</span>
 
-              @if (getCantidad(prod) === 0) {
+              @if (soloCandy() && prod.incluyeEntrada) {
+                <button class="product-card__btn-add" (click)="elegirFuncionParaCombo(prod)">Elegir función</button>
+              } @else if (getCantidad(prod) === 0) {
                 <button class="product-card__btn-add" (click)="incrementar(prod)" [disabled]="!puedeAgregar(prod)">Agregar</button>
               } @else {
                 <div class="quantity-controls">
@@ -44,7 +46,9 @@
                 </div>
               }
             </div>
-            @if (prod.incluyeEntrada && !puedeAgregar(prod) && getCantidad(prod) === 0) {
+            @if (soloCandy() && prod.incluyeEntrada) {
+              <span class="product-card__nota">Primero elegís la película, la función y la butaca; el combo queda en tu pedido.</span>
+            } @else if (prod.incluyeEntrada && !puedeAgregar(prod) && getCantidad(prod) === 0) {
               <span class="product-card__nota">Ya cubriste todas tus entradas con combos.</span>
             }
           </div>
@@ -96,7 +100,7 @@
         [entradas]="resumenEntradas()"
         [candy]="resumenCandy()"
         [descuentos]="descuentos()"
-        (onContinuar)="irAlPago()">
+        (continuar)="irAlPago()">
       </app-resumen-compra>
     </aside>
 

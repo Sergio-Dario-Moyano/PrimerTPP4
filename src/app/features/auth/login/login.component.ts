@@ -110,7 +110,6 @@ export class LoginComponent {
         this.loginForm.controls.clave.value
       );
 
-      console.log('Login exitoso');
       this.router.navigate(['/']);
 
     } catch (err: any) {

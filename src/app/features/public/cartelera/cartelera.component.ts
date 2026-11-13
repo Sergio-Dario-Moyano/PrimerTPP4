@@ -1,5 +1,7 @@
 import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { DuracionPipe } from '../../../shared/pipes/duracion.pipe';
+import { ReservaService } from '../../../core/services/reserva.service';
 
 import { CarteleraService } from '../../../core/services/cartelera.service';
 import { Pelicula } from '../../../core/models/Pelicula.model';
@@ -10,11 +12,23 @@ import { RawCombo } from '../../../core/models/RawCombo.model';
 @Component({
   selector: 'app-cartelera',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, DuracionPipe],
   templateUrl: './cartelera.component.html',
   styleUrl: './cartelera.component.css'
 })
 export class CarteleraComponent implements OnInit {
+  private reservaService = inject(ReservaService);
+
+  /** Combos con entrada elegidos desde la pestaña Candy Bar que todavía no tienen función. */
+  combosPendientes = computed(() =>
+    this.reservaService.butacas().length === 0
+      ? this.reservaService.combos().filter(c => c.incluyeEntrada)
+      : []);
+
+  quitarCombosPendientes(): void {
+    this.reservaService.limpiarReserva();
+  }
+
 
   private carteleraService = inject(CarteleraService);
 

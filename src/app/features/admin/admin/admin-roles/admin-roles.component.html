@@ -74,18 +74,28 @@
     </div>
 
     <ng-template #filaUsuario let-u>
-      <tr>
+      <tr [class.fila-pendiente]="tienePendiente(u)">
         <td><strong>{{ u.nombre }} {{ u.apellido }}</strong><br><small>{{ u.email }}</small></td>
         <td>
-          <select [value]="u.rol" (change)="onRolBase(u, $event)" aria-label="Rol base">
-            @for (r of ROLES_BASE; track r.valor) { <option [value]="r.valor" [selected]="r.valor === u.rol">{{ r.etiqueta }}</option> }
+          <select (change)="onRolBase(u, $event)" aria-label="Rol base">
+            @for (r of ROLES_BASE; track r.valor) { <option [value]="r.valor" [selected]="r.valor === valorFila(u).rol">{{ r.etiqueta }}</option> }
           </select>
         </td>
         <td>
           <select (change)="onRolConfig(u, $event)" aria-label="Rol configurable">
-            <option value="" [selected]="!u.rol_id">Sin rol extra</option>
-            @for (r of roles(); track r.id) { <option [value]="r.id" [selected]="r.id === u.rol_id">{{ r.nombre }}</option> }
+            <option value="" [selected]="!valorFila(u).rol_id">Sin rol extra</option>
+            @for (r of roles(); track r.id) { <option [value]="r.id" [selected]="r.id === valorFila(u).rol_id">{{ r.nombre }}</option> }
           </select>
+        </td>
+        <td>
+          @if (tienePendiente(u)) {
+            <button type="button" class="btn-toggle" [disabled]="guardando() === u.id" (click)="guardar(u)">
+              {{ guardando() === u.id ? 'Guardando…' : 'Guardar' }}
+            </button>
+            <button type="button" class="btn-toggle btn-toggle--peligro" [disabled]="guardando() === u.id" (click)="descartar(u)">Descartar</button>
+          } @else {
+            <small>Sin cambios</small>
+          }
         </td>
       </tr>
     </ng-template>
@@ -93,7 +103,7 @@
     @if (resultados().length) {
       <div class="admin-table-wrap">
         <table class="admin-table">
-          <thead><tr><th>Usuario</th><th>Rol base</th><th>Rol configurable</th></tr></thead>
+          <thead><tr><th>Usuario</th><th>Rol base</th><th>Rol configurable</th><th>Acción</th></tr></thead>
           <tbody>
             @for (u of resultados(); track u.id) { <ng-container *ngTemplateOutlet="filaUsuario; context: { $implicit: u }" /> }
           </tbody>
@@ -104,10 +114,10 @@
     <h3 style="margin-top: 1.5rem;">Usuarios con permisos en el panel</h3>
     <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>Usuario</th><th>Rol base</th><th>Rol configurable</th></tr></thead>
+        <thead><tr><th>Usuario</th><th>Rol base</th><th>Rol configurable</th><th>Acción</th></tr></thead>
         <tbody>
           @for (u of conRol(); track u.id) { <ng-container *ngTemplateOutlet="filaUsuario; context: { $implicit: u }" /> }
-          @empty { <tr><td colspan="3" class="empty">Nadie tiene permisos todavía.</td></tr> }
+          @empty { <tr><td colspan="4" class="empty">Nadie tiene permisos todavía.</td></tr> }
         </tbody>
       </table>
     </div>

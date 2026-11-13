@@ -16,9 +16,10 @@
     <div class="mis-peliculas__grid">
       @for (peli of peliculas(); track peli.id) {
         <article class="pelicula-card">
-          <a class="pelicula-card__img-wrapper" [routerLink]="['/pelicula', peli.id]">
+          <button type="button" class="pelicula-card__img-wrapper" (click)="abrir(peli)"
+                  [attr.aria-label]="'Ver ' + peli.titulo + ' en grande'">
             <img [src]="peli.url_imagen" [alt]="'Póster de ' + peli.titulo" class="pelicula-card__img">
-          </a>
+          </button>
           <div class="pelicula-card__info">
             <h4 class="pelicula-card__titulo">{{ peli.titulo }}</h4>
             <span class="pelicula-card__fecha">Vista el {{ peli.fechaVista | date:'dd/MM/yyyy' }}</span>
@@ -28,8 +29,10 @@
                   <span [class.pelicula-card__estrella--activa]="e <= peli.miCalificacion!">★</span>
                 }
               </span>
+            } @else if (peli.terminada) {
+              <button type="button" class="pelicula-card__calificar" (click)="abrir(peli)">Calificar ☆</button>
             } @else {
-              <a class="pelicula-card__calificar" [routerLink]="['/pelicula', peli.id]">Calificar ☆</a>
+              <span class="pelicula-card__fecha">Calificala cuando termine la función</span>
             }
           </div>
         </article>
@@ -37,3 +40,68 @@
     </div>
   }
 </section>
+
+<!-- Póster en grande con mi calificación -->
+@if (seleccionada(); as peli) {
+  <div class="visor" (click)="cerrar()">
+    <div class="visor__tarjeta" role="dialog" aria-modal="true" [attr.aria-label]="peli.titulo" (click)="$event.stopPropagation()">
+      <button type="button" class="visor__cerrar" (click)="cerrar()" aria-label="Cerrar">✕</button>
+
+      <img class="visor__poster" [src]="peli.url_imagen" [alt]="'Póster de ' + peli.titulo">
+
+      <div class="visor__info">
+        <h3 class="visor__titulo">{{ peli.titulo }}</h3>
+        <p class="visor__fecha">Vista el {{ peli.fechaVista | date:"dd/MM/yyyy 'a las' HH:mm" }} h</p>
+
+        @if (peli.miCalificacion) {
+          <h4 class="visor__subtitulo">Tu calificación</h4>
+          <div class="visor__estrellas" [attr.aria-label]="peli.miCalificacion + ' de 5 estrellas'">
+            @for (e of ESTRELLAS; track e) {
+              <span class="visor__estrella" [class.visor__estrella--activa]="e <= peli.miCalificacion!">★</span>
+            }
+            <span class="visor__nota">{{ peli.miCalificacion }}/5</span>
+          </div>
+          @if (peli.miComentario) {
+            <p class="visor__comentario">"{{ peli.miComentario }}"</p>
+          }
+
+        } @else if (peli.terminada) {
+          <h4 class="visor__subtitulo">¿Qué te pareció?</h4>
+          <form class="visor__form" [formGroup]="resenaForm" (ngSubmit)="guardarResena()">
+            <div class="visor__estrellas visor__estrellas--elegir" role="radiogroup" aria-label="Calificación"
+                 (mouseleave)="estrellaHover.set(0)">
+              @for (e of ESTRELLAS; track e) {
+                <button type="button" class="visor__estrella visor__estrella--boton"
+                        role="radio" [attr.aria-checked]="resenaForm.controls.calificacion.value === e"
+                        [attr.aria-label]="e + (e === 1 ? ' estrella' : ' estrellas')"
+                        [class.visor__estrella--activa]="e <= (estrellaHover() || resenaForm.controls.calificacion.value)"
+                        (mouseenter)="estrellaHover.set(e)" (click)="elegirEstrella(e)">★</button>
+              }
+            </div>
+            @if (resenaForm.controls.calificacion.touched && resenaForm.controls.calificacion.invalid) {
+              <small class="visor__error">Elegí de 1 a 5 estrellas.</small>
+            }
+
+            <textarea class="visor__textarea" formControlName="comentario" rows="3" maxlength="255"
+                      placeholder="Escribí un comentario corto…" aria-label="Comentario"></textarea>
+            <small class="visor__contador">{{ resenaForm.controls.comentario.value.length }}/255</small>
+
+            @if (errorResena()) { <p class="visor__error">{{ errorResena() }}</p> }
+
+            <button type="submit" class="visor__btn" [disabled]="enviando() || resenaForm.invalid">
+              {{ enviando() ? 'Guardando…' : 'Guardar calificación' }}
+            </button>
+          </form>
+
+        } @else {
+          <p class="visor__pendiente">
+            Vas a poder calificarla cuando termine la función
+            @if (peli.terminaEn) { (a las {{ peli.terminaEn | date:'HH:mm' }} h) }.
+          </p>
+        }
+
+        <a class="visor__link" [routerLink]="['/pelicula', peli.id]">Ver la ficha de la película →</a>
+      </div>
+    </div>
+  </div>
+}
