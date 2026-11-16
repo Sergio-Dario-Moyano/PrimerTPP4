@@ -23,7 +23,7 @@
         <span class="book-seats__highlight">
           Fecha: {{ horarioUI() | date:'dd/MM/yyyy' }} ·
           Hora: {{horarioUI() | date: 'HH:mm'}} ·
-          Formato: {{ pelicula()?.formatos?.[0] || '2D' }} ·
+          Formato: {{ formatoUI() || '2D' }} ·
           Sala: {{ salaUI() }}
         </span>
       </div>
@@ -133,7 +133,7 @@
         <app-resumen-compra
           [pelicula]="{
             titulo: pelicula()?.titulo || '',
-            formato: pelicula()?.formatos?.[0] || '2D',
+            formato: formatoUI() || '2D',
             posterUrl: pelicula()?.poster_url || ''
           }"
           [funcion]="{

@@ -56,6 +56,8 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
   horarioUI = signal<string>('');
   salaUI = signal<string>('');
+  /** Formato real de la función (2D, 3D, 4D, 5D), leído de la BD. */
+  formatoUI = signal<string>('');
   peliculaId = signal<string>('');
 
   funcionIdReal = signal<string | null>(null);
@@ -185,12 +187,18 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
       const { data: funcionDB, error: errFuncion } = await supabase
         .from('funciones')
-        .select('*')
+        .select('*, salas ( nombre )')
         .eq('id', funcionIdRuta)
         .single();
 
       if (errFuncion || !funcionDB) throw new Error('Función no encontrada');
       const funcion = funcionDB as RawFuncion;
+
+      // El query param "sala" trae el sala_id (un número); mostramos el nombre real de la sala,
+      // el mismo que muestra el ticket (salas.nombre). Se propaga a la confitería y al resumen.
+      const sala = funcionDB.salas as unknown as { nombre: string } | null;
+      this.salaUI.set(sala?.nombre ?? `Sala ${funcion.sala_id}`);
+      this.formatoUI.set(funcionDB.formato ?? '2D');
 
       if (funcionDB.estado === 'cancelada') {
         this.funcionCancelada.set(funcionDB.motivo_cancelacion || 'Problemas técnicos');
@@ -274,7 +282,7 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
         poster_url: data.url_imagen,
         clasificacion: data.restriccion_edad === 0 ? 'ATP' : `+${data.restriccion_edad}`,
         generos: data.pelicula_genero?.map((r: any) => r.generos.nombre) || [],
-        formatos: ['2D', '3D'],
+        formatos: this.formatoUI() ? [this.formatoUI()] : [],
         idiomas: ['Castellano'],
         hero_imagen: data.hero_imagen
       });
