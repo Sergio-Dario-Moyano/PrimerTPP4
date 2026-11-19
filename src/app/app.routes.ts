@@ -1,6 +1,16 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth-guard';
-import { permisoGuard, panelGuard } from './core/guards/admin-guard-guard';
+import { authGuard } from './core/guards/auth.guard';
+import { panelGuard } from './core/guards/panel.guard';
+import { peliculasGuard } from './core/guards/peliculas.guard';
+import { funcionesGuard } from './core/guards/funciones.guard';
+import { candyGuard } from './core/guards/candy.guard';
+import { cuponesGuard } from './core/guards/cupones.guard';
+import { fidelizacionGuard } from './core/guards/fidelizacion.guard';
+import { propuestasGuard } from './core/guards/propuestas.guard';
+import { reportesGuard } from './core/guards/reportes.guard';
+import { logGuard } from './core/guards/log.guard';
+import { rolesGuard } from './core/guards/roles.guard';
+import { validarGuard } from './core/guards/validar.guard';
 
 export const routes: Routes = [
   {
@@ -89,52 +99,52 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'peliculas' },
       {
         path: 'peliculas',
-        canActivate: [permisoGuard('peliculas')],
+        canActivate: [peliculasGuard],
         loadComponent: () => import('./features/admin/admin/admin-peliculas/admin-peliculas.component').then(m => m.AdminPeliculasComponent)
       },
       {
         path: 'funciones',
-        canActivate: [permisoGuard('funciones')],
+        canActivate: [funcionesGuard],
         loadComponent: () => import('./features/admin/admin/admin-funciones/admin-funciones.component').then(m => m.AdminFuncionesComponent)
       },
       {
         path: 'candy',
-        canActivate: [permisoGuard('candy')],
+        canActivate: [candyGuard],
         loadComponent: () => import('./features/admin/admin/admin-candy/admin-candy.component').then(m => m.AdminCandyComponent)
       },
       {
         path: 'cupones',
-        canActivate: [permisoGuard('cupones')],
+        canActivate: [cuponesGuard],
         loadComponent: () => import('./features/admin/admin/admin-cupones/admin-cupones.component').then(m => m.AdminCuponesComponent)
       },
       {
         path: 'fidelizacion',
-        canActivate: [permisoGuard('fidelizacion')],
+        canActivate: [fidelizacionGuard],
         loadComponent: () => import('./features/admin/admin/admin-fidelizacion/admin-fidelizacion.component').then(m => m.AdminFidelizacionComponent)
       },
       {
         path: 'propuestas',
-        canActivate: [permisoGuard('propuestas')],
+        canActivate: [propuestasGuard],
         loadComponent: () => import('./features/admin/admin/admin-propuestas/admin-propuestas.component').then(m => m.AdminPropuestasComponent)
       },
       {
         path: 'reportes',
-        canActivate: [permisoGuard('reportes')],
+        canActivate: [reportesGuard],
         loadComponent: () => import('./features/admin/admin/admin-reportes/admin-reportes.component').then(m => m.AdminReportesComponent)
       },
       {
         path: 'log',
-        canActivate: [permisoGuard('log')],
+        canActivate: [logGuard],
         loadComponent: () => import('./features/admin/admin/admin-log/admin-log.component').then(m => m.AdminLogComponent)
       },
       {
         path: 'roles',
-        canActivate: [permisoGuard('roles')],
+        canActivate: [rolesGuard],
         loadComponent: () => import('./features/admin/admin/admin-roles/admin-roles.component').then(m => m.AdminRolesComponent)
       },
       {
         path: 'validar',
-        canActivate: [permisoGuard('validar_sala', 'validar_candy')],
+        canActivate: [validarGuard],
         loadComponent: () => import('./features/admin/admin/validar-qr/validar-qr.component').then(m => m.ValidarQrComponent)
       }
     ]

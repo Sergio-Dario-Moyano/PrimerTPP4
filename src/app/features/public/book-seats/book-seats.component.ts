@@ -460,7 +460,7 @@ export class BookSeatsComponent implements OnInit, OnDestroy {
 
   async confirmarSeleccion(): Promise<void> {
     // Segundo control de edad al confirmar: al cargar la página la sesión puede no estar
-    // restaurada todavía, y un menor registrado no puede comprar (mail 12/02).
+    // restaurada todavía, y un menor registrado no puede comprar.
     if (await this.esMenorParaEstaPelicula()) {
       this.esMenorRegistrado.set(true);
       this.modalEdadAbierto.set(true);

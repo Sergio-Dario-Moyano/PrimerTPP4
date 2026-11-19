@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -64,15 +65,30 @@ export class LoginComponent {
   }
 
   constructor() {
+    // El modo (login / registro) sale de la URL: /login o /login?modo=registro.
+    // Así el botón "Iniciar Sesión" del navbar (que va a /login) vuelve al login
+    // aunque estemos en el formulario de registro.
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      const esLogin = params.get('modo') !== 'registro';
+      if (esLogin !== this.isLoginMode()) {
+        this.isLoginMode.set(esLogin);
+        this.loginForm.reset();
+        this.registroForm.reset();
+      }
+    });
+
     // Si cambia la contraseña, volvemos a comparar con la confirmación
     this.controlClaveRegistro.valueChanges.subscribe(() =>
       this.registroForm.controls.confirmarClave.updateValueAndValidity({ emitEvent: false }));
   }
 
+  /** Cambia de modo cambiando la URL; la suscripción del constructor actualiza la pantalla. */
   toggleMode() {
-    this.isLoginMode.update(mode => !mode);
-    this.loginForm.reset();
-    this.registroForm.reset();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { modo: this.isLoginMode() ? 'registro' : null },
+      queryParamsHandling: 'merge'
+    });
   }
 
   formatearFecha(event: Event) {
@@ -110,33 +126,40 @@ export class LoginComponent {
         this.loginForm.controls.clave.value
       );
 
-      this.router.navigate(['/']);
+      // Si un guard nos mandó al login, volvemos a la página que quería ver
+      const volverA = this.route.snapshot.queryParamMap.get('returnUrl') || '/';
+      this.router.navigateByUrl(volverA);
 
     } catch (err: any) {
       console.error('Detalle técnico del error:', err);
 
-      // CAPTURAMOS SI EL USUARIO NO EXISTE O CREDENCIALES SON INVÁLIDAS
-      // Abrimos el servicio de modales y cambiamos al formulario de registro
-      const mensajeError = err?.message || '';
-      if (mensajeError.includes('Invalid login credentials') || mensajeError.includes('Invalid') || mensajeError.includes('not found')) {
+      // Supabase usa el mismo error para "no existe" y "contraseña incorrecta",
+      // así que NO mandamos al registro: puede ser solo un error de tipeo.
+      const codigo: string = err?.code ?? '';
+      const mensaje: string = err?.message ?? '';
 
+      if (codigo === 'invalid_credentials' || /invalid login credentials/i.test(mensaje)) {
         this.modalService.open(
-          'Cuenta No Encontrada',
-          'No encontramos una cuenta registrada con este correo o la contraseña es incorrecta. Te redirigiremos al registro.',
+          'Datos incorrectos',
+          'El correo o la contraseña no son correctos. Revisalos e intentá de nuevo. Si todavía no tenés cuenta, podés registrarte abajo.',
           'error'
         );
-
-        // Cambiamos automáticamente al formulario de registro
-        this.isLoginMode.set(false);
-
-        // Autocompletamos el correo en el formulario de registro para mayor comodidad
-        this.registroForm.patchValue({ email: emailIngresado });
-        this.loginForm.reset();
+        // Dejamos el correo escrito y borramos solo la contraseña
+        this.loginForm.controls.clave.reset();
         return;
       }
 
-      // Si es otro tipo de error general de login
-      this.modalService.open('Error de Acceso', 'Ocurrió un problema al iniciar sesión. Verifica tus datos.', 'error');
+      if (codigo === 'email_not_confirmed' || /email not confirmed/i.test(mensaje)) {
+        this.modalService.open(
+          'Confirmá tu correo',
+          'Tu cuenta todavía no está confirmada. Revisá tu casilla de correo (y la carpeta de spam) y hacé clic en el enlace de confirmación.',
+          'error'
+        );
+        return;
+      }
+
+      // Cualquier otro error (sin conexión, demasiados intentos, etc.)
+      this.modalService.open('Error de Acceso', 'Ocurrió un problema al iniciar sesión. Intentá de nuevo en unos minutos.', 'error');
 
     } finally {
       this.cargando.set(false);

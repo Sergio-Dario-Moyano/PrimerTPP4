@@ -1,4 +1,4 @@
-/* Estilos comunes de las secciones nuevas del perfil (lista de espera, propuestas) */
+Estilos comunes de las secciones nuevas del perfil (lista de espera, propuestas)
 .seccion { display: flex; flex-direction: column; gap: 1.25rem; width: 100%; animation: fadeIn 0.3s ease-in-out; }
 .seccion__titulo { margin: 0; font-size: 1.5rem; color: var(--color-secondary, #f5b301); text-align: center; }
 .seccion__intro { margin: 0; color: #a3a3a3; font-size: 0.9rem; text-align: center; line-height: 1.5; }

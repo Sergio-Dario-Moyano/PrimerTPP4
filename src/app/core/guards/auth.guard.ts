@@ -13,6 +13,6 @@ export const authGuard: CanActivateFn = async (route, state) => {
     return true; // Hay sesión, permite el acceso
   }
 
-  // Redirigimos al componente de Login ya configurado en las rutas
-  return router.createUrlTree(['/login']);
+  // Redirigimos al Login y recordamos a dónde quería ir
+  return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 };

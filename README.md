@@ -88,7 +88,7 @@ Trabajo Práctico N.º 1 — Programación IV.
 ```
 src/app/
 ├── core/
-│   ├── guards/        authGuard y rolGuard(...roles): protección por sesión y por rol
+│   ├── guards/        un archivo por guard: authGuard, panelGuard y uno por cada sección del panel (peliculasGuard, reportesGuard, …)
 │   ├── models/        interfaces Raw* (filas de la BD), *Insert (inserciones) y modelos de vista
 │   ├── services/      acceso a Supabase y lógica de negocio
 │   │                  (funciones, reserva, reportes, fidelización, alertas, log, storage, pwa…)
@@ -173,7 +173,7 @@ Tablas principales (PostgreSQL en Supabase):
 
 1. **Standalone components + signals.** No hay `NgModule`. El estado de cada pantalla son `signal()`, y los valores derivados (totales, filtros, rankings) son `computed()`. Así la UI se actualiza sola, sin suscripciones manuales.
 
-2. **Lazy loading y guards funcionales.** Cada pantalla se carga con `loadComponent`. `rolGuard('admin')` protege cada sección del panel, y si un empleado intenta entrar a una sección de admin, lo redirige al validador.
+2. **Lazy loading y guards funcionales.** Cada pantalla se carga con `loadComponent`. La ruta padre `/admin` usa `panelGuard` y cada ruta hija tiene su propio guard en un archivo aparte (`peliculasGuard`, `reportesGuard`, `validarGuard`, …). Si alguien entra a una sección que no puede ver, lo manda a la primera que sí puede (un empleado termina en el validador).
 
 3. **Un solo código por compra.** El QR y el PIN manual son el mismo `codigo_ticket`, que sirve para la sala y para el candy. Cada sector cambia solo sus propios estados (`entradas` → validada, `detalle_candy` → entregado). Por eso el código funciona una sola vez en cada sector.
 
@@ -193,7 +193,7 @@ Tablas principales (PostgreSQL en Supabase):
 
 11. **Carga diferida de librerías pesadas.** jsPDF, jspdf-autotable y ExcelJS se importan con `import()` dinámico recién cuando se exporta, así no pesan en la carga inicial.
 
-12. **Roles configurables.** Hay roles base (`cliente`, `empleado_cine`, `empleado_candy`, `admin`) y roles configurables (tabla `roles`), que son una lista de claves de secciones. `PermisosService` arma los permisos efectivos; `permisoGuard('reportes')` protege cada ruta y la barra lateral muestra solo lo permitido. La gestión de roles queda reservada al rol base `admin`.
+12. **Roles configurables.** Hay roles base (`cliente`, `empleado_cine`, `empleado_candy`, `admin`) y roles configurables (tabla `roles`), que son una lista de claves de secciones. `PermisosService` arma los permisos efectivos; cada ruta hija tiene su guard (por ejemplo `reportesGuard` comprueba el permiso `reportes`) y la barra lateral muestra solo lo permitido. La gestión de roles queda reservada al rol base `admin`.
 
 13. **Cancelación atómica de funciones.** No se hace desde Angular con varias llamadas, porque si una fallara quedaría a medias. Es una función PL/pgSQL (`cancelar_funcion`) que corre en una sola transacción: bloquea la función (`for update`), recorre las compras, acredita el total (lo pagado + el crédito usado, incluido el candy), descuenta los puntos ganados, cancela entradas y candy, notifica, cierra la lista de espera y registra el log. Ante cualquier error lanza una excepción y PostgreSQL revierte todo. Como corre con `security definer`, solo se puede ejecutar a través de un envoltorio que verifica que el usuario tenga permiso sobre la sección Funciones (`tiene_permiso('funciones')`, migración 003); los usuarios anónimos no pueden llamarla.
 

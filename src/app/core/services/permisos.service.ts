@@ -68,6 +68,17 @@ export class PermisosService {
     return this.seccionesVisibles()[0]?.ruta ?? null;
   }
 
+  /**
+   * Usado por los guards: carga los permisos del usuario de la sesión actual.
+   * Devuelve false si no hay nadie logueado.
+   */
+  async cargarSesionActual(): Promise<boolean> {
+    const { data } = await this.supabase.auth.getSession();
+    const userId = data.session?.user.id ?? null;
+    await this.cargarPara(userId);
+    return !!userId;
+  }
+
   /** Carga (una vez por usuario) el rol base y el rol configurable. */
   async cargarPara(userId: string | null, forzar = false): Promise<void> {
     if (!userId) {
