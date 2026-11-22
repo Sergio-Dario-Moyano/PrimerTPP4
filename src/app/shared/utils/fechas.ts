@@ -70,3 +70,33 @@ export const fechaValidator: ValidatorFn = (c: AbstractControl): ValidationError
 
 export const horaValidator: ValidatorFn = (c: AbstractControl): ValidationErrors | null =>
   !c.value || esHoraValida(c.value) ? null : { horaInvalida: true };
+
+// ---------- Límite de programación ----------
+
+/** Las películas (estreno) y las funciones no se pueden cargar a más de estos días desde hoy. */
+export const DIAS_MAXIMOS_PROGRAMACION = 60;
+
+/** Último día permitido: hoy + `dias`, a las 23:59:59 (cuenta el día completo). */
+export function fechaLimite(dias = DIAS_MAXIMOS_PROGRAMACION): Date {
+  const limite = new Date();
+  limite.setDate(limite.getDate() + dias);
+  limite.setHours(23, 59, 59, 999);
+  return limite;
+}
+
+/** true si la fecha cae después del límite de `dias` desde hoy. */
+export function superaDiasDesdeHoy(fecha: Date, dias = DIAS_MAXIMOS_PROGRAMACION): boolean {
+  return fecha.getTime() > fechaLimite(dias).getTime();
+}
+
+/**
+ * Rechaza fechas "dd/mm/aaaa" posteriores a hoy + `dias`.
+ * Error: { fechaMuyLejana: { dias, limite: 'dd/mm/aaaa' } }.
+ */
+export function fechaMaximaValidator(dias = DIAS_MAXIMOS_PROGRAMACION): ValidatorFn {
+  return (c: AbstractControl): ValidationErrors | null => {
+    const fecha = c.value ? parsearFecha(c.value) : null;
+    if (!fecha || !superaDiasDesdeHoy(fecha, dias)) return null;
+    return { fechaMuyLejana: { dias, limite: aTextoFecha(fechaLimite(dias)) } };
+  };
+}

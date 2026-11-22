@@ -21,6 +21,9 @@ export const MENSAJES_ERROR: Record<string, (detalle: any) => string> = {
   fechaMuyAntigua: () => 'Ingresá una fecha de nacimiento real.',
   fechaInvalida: () => 'Fecha inválida (dd/mm/aaaa).',
   horaInvalida: () => 'Hora inválida (hh:mm).',
+  fechaMuyLejana: e => `No puede superar los ${e.dias} días desde hoy (como máximo el ${e.limite}).`,
+  noNumerico: () => 'Ingresá solo números.',
+  noPositivo: () => 'Tiene que ser un número mayor a 0.',
   losControlesNoCoinciden: () => 'Las contraseñas no coinciden.',
 };
 

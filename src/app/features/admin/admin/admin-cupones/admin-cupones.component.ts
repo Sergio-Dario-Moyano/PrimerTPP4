@@ -4,6 +4,14 @@ import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { CODIGO_BIENVENIDA } from '../../../../core/utils/constantes';
 import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
+import { SoloNumerosDirective } from '../../../../shared/directives/solo-numeros.directive';
+import { numeroPositivoValidator, enteroValidator } from '../../../../shared/validators/numeros';
+
+/**
+ * Código de cupón: texto que empieza con una letra; después admite letras, números, - y _.
+ * Ej. válidos: JUBILADOS30, VERANO_2026. Inválidos: 2026, 30OFF.
+ */
+const CODIGO_CUPON = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
 export interface CuponAdmin {
   id: string;
@@ -21,7 +29,7 @@ export interface CuponAdmin {
 @Component({
   selector: 'app-admin-cupones',
   standalone: true,
-  imports: [ReactiveFormsModule, ErrorCampoDirective],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, SoloNumerosDirective],
   templateUrl: './admin-cupones.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -39,14 +47,14 @@ export class AdminCuponesComponent implements OnInit {
   mensajeError = signal<string>('');
 
   nuevoForm = this.fb.nonNullable.group({
-    codigo: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[A-Za-z0-9_-]+$/)]],
-    porcentaje_descuento: [null as number | null, [Validators.required, Validators.min(1), Validators.max(100)]],
+    codigo: ['', [Validators.required, Validators.minLength(3), Validators.pattern(CODIGO_CUPON)]],
+    porcentaje_descuento: [null as number | null, [Validators.required, numeroPositivoValidator, enteroValidator, Validators.max(100)]],
     solo_mayores_50: [false]
   });
 
   edicionForm = this.fb.nonNullable.group({
-    codigo: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[A-Za-z0-9_-]+$/)]],
-    porcentaje_descuento: [0, [Validators.required, Validators.min(1), Validators.max(100)]],
+    codigo: ['', [Validators.required, Validators.minLength(3), Validators.pattern(CODIGO_CUPON)]],
+    porcentaje_descuento: [null as number | null, [Validators.required, numeroPositivoValidator, enteroValidator, Validators.max(100)]],
     solo_mayores_50: [false],
     activo: [true]
   });

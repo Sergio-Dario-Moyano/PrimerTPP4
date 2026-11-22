@@ -7,7 +7,9 @@ import { LogService } from '../../../../core/services/log.service';
 import { ImageDropzoneComponent } from '../../../../shared/components/image-dropzone/image-dropzone.component';
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
-import { fechaValidator, parsearFecha, aFechaBD, aTimestampBD, desdeBD, aTextoFecha } from '../../../../shared/utils/fechas';
+import { fechaValidator, fechaMaximaValidator, DIAS_MAXIMOS_PROGRAMACION, parsearFecha, aFechaBD, aTimestampBD, desdeBD, aTextoFecha } from '../../../../shared/utils/fechas';
+import { numeroPositivoValidator, enteroValidator } from '../../../../shared/validators/numeros';
+import { SoloNumerosDirective } from '../../../../shared/directives/solo-numeros.directive';
 import { DIAS_PREVENTA, enPreventa } from '../../../../core/utils/precios';
 import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
@@ -36,7 +38,7 @@ export interface PeliculaAdmin {
 @Component({
   selector: 'app-admin-peliculas',
   standalone: true,
-  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, DatePipe, ImageDropzoneComponent, MascaraFechaDirective, AdminAccionDirective],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, DatePipe, ImageDropzoneComponent, MascaraFechaDirective, AdminAccionDirective, SoloNumerosDirective],
   templateUrl: './admin-peliculas.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -51,6 +53,7 @@ export class AdminPeliculasComponent implements OnInit {
   propuesta = signal<{ id: string; titulo: string; perfil_id: string; autor: string } | null>(null);
 
   readonly DIAS_PREVENTA = DIAS_PREVENTA;
+  readonly DIAS_MAXIMOS = DIAS_MAXIMOS_PROGRAMACION;
 
   peliculas = signal<PeliculaAdmin[]>([]);
   generos = signal<Genero[]>([]);
@@ -64,15 +67,16 @@ export class AdminPeliculasComponent implements OnInit {
   form = this.fb.nonNullable.group({
     titulo: ['', [Validators.required, Validators.minLength(2)]],
     sinopsis: ['', [Validators.required, Validators.minLength(10)]],
-    duracion_minutos: [null as number | null, [Validators.required, Validators.min(30), Validators.max(300)]],
+    duracion_minutos: [null as number | null, [Validators.required, numeroPositivoValidator, enteroValidator, Validators.min(30), Validators.max(300)]],
     url_imagen: ['', [Validators.required]],
     hero_imagen: ['', [Validators.required]],
     restriccion_edad: [0, [Validators.required]],
-    precio_base: [null as number | null, [Validators.required, Validators.min(1)]],
+    precio_base: [null as number | null, [Validators.required, numeroPositivoValidator]],
     estado: ['cartelera' as PeliculaAdmin['estado'], [Validators.required]],
-    fecha_estreno: ['', [fechaValidator]],
+    // El estreno no puede superar los 60 días desde hoy
+    fecha_estreno: ['', [fechaValidator, fechaMaximaValidator()]],
     con_preventa: [false],
-    preventa_precio: [null as number | null, [Validators.min(0)]]
+    preventa_precio: [null as number | null, [numeroPositivoValidator]]
   });
 
   constructor() {
@@ -88,8 +92,8 @@ export class AdminPeliculasComponent implements OnInit {
     if (pideEstreno) fecha_estreno.addValidators(Validators.required);
     else fecha_estreno.removeValidators(Validators.required);
 
-    if (con_preventa.value) preventa_precio.addValidators([Validators.required, Validators.min(1)]);
-    else preventa_precio.removeValidators([Validators.required, Validators.min(1)]);
+    if (con_preventa.value) preventa_precio.addValidators(Validators.required);
+    else preventa_precio.removeValidators(Validators.required);
 
     fecha_estreno.updateValueAndValidity();
     preventa_precio.updateValueAndValidity();

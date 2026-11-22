@@ -7,7 +7,7 @@ import { FuncionesService, ResultadoProgramacion } from '../../../../core/servic
 import { ListaEsperaService } from '../../../../core/services/lista-espera.service';
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
-import { fechaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD } from '../../../../shared/utils/fechas';
+import { fechaValidator, fechaMaximaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD, superaDiasDesdeHoy, DIAS_MAXIMOS_PROGRAMACION } from '../../../../shared/utils/fechas';
 import { ModalService } from '../../../../core/services/modal.service';
 import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
@@ -59,6 +59,8 @@ export class AdminFuncionesComponent implements OnInit {
     { valor: 0, nombre: 'Dom' }
   ];
 
+  readonly DIAS_MAXIMOS = DIAS_MAXIMOS_PROGRAMACION;
+
   modo = signal<Modo>('unica');
   diasSeleccionados = signal<number[]>([]);
   peliculas = signal<PeliculaSelect[]>([]);
@@ -79,9 +81,10 @@ export class AdminFuncionesComponent implements OnInit {
     formato: ['2D', Validators.required],
     idioma: ['castellano', Validators.required],
     hora: ['', [Validators.required, horaValidator]],
-    fecha: ['', [fechaValidator]],
-    desde: ['', [fechaValidator]],
-    hasta: ['', [fechaValidator]]
+    // Ninguna función puede quedar a más de 60 días desde hoy
+    fecha: ['', [fechaValidator, fechaMaximaValidator()]],
+    desde: ['', [fechaValidator, fechaMaximaValidator()]],
+    hasta: ['', [fechaValidator, fechaMaximaValidator()]]
   });
 
   async ngOnInit(): Promise<void> {
@@ -140,13 +143,16 @@ export class AdminFuncionesComponent implements OnInit {
     const v = this.form.getRawValue();
     if (this.modo() === 'unica') {
       const f = combinarFechaHora(v.fecha, v.hora);
-      return f ? [f] : 'Completá la fecha (dd/mm/aaaa) y la hora (hh:mm).';
+      if (!f) return 'Completá la fecha (dd/mm/aaaa) y la hora (hh:mm).';
+      if (superaDiasDesdeHoy(f)) return `La función no puede superar los ${DIAS_MAXIMOS_PROGRAMACION} días desde hoy.`;
+      return [f];
     }
 
     const desde = parsearFecha(v.desde);
     const hasta = parsearFecha(v.hasta);
     if (!desde || !hasta) return 'Completá el rango de fechas (desde / hasta).';
     if (hasta < desde) return 'La fecha "hasta" debe ser posterior a "desde".';
+    if (superaDiasDesdeHoy(hasta)) return `Las funciones no pueden superar los ${DIAS_MAXIMOS_PROGRAMACION} días desde hoy.`;
     if (this.diasSeleccionados().length === 0) return 'Elegí al menos un día de la semana.';
 
     const diffDias = (hasta.getTime() - desde.getTime()) / 86400000;

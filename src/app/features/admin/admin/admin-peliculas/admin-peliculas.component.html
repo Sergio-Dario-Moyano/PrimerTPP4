@@ -55,7 +55,7 @@
       </div>
       <div class="form-group">
         <label for="precio">Precio base ($)</label>
-        <input id="precio" type="number" formControlName="precio_base" placeholder="Ej. 5000">
+        <input id="precio" type="number" formControlName="precio_base" conDecimales placeholder="Ej. 5000">
       </div>
     </div>
 
@@ -71,6 +71,7 @@
       <div class="form-group">
         <label for="estreno">Fecha de estreno</label>
         <input id="estreno" type="text" formControlName="fecha_estreno" appMascaraFecha="fecha">
+        <span class="form-ayuda">Hasta {{ DIAS_MAXIMOS }} días desde hoy.</span>
       </div>
     </div>
 
@@ -85,7 +86,7 @@
       @if (form.controls.con_preventa.value) {
         <div class="form-group">
           <label for="preventa">Precio de preventa ($)</label>
-          <input id="preventa" type="number" formControlName="preventa_precio" placeholder="Ej. 4000">
+          <input id="preventa" type="number" formControlName="preventa_precio" conDecimales placeholder="Ej. 4000">
         </div>
       }
     </div>

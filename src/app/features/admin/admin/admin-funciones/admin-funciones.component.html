@@ -46,6 +46,7 @@
       <div class="form-group">
         <label for="fecha">Fecha</label>
         <input id="fecha" type="text" formControlName="fecha" appMascaraFecha="fecha">
+        <span class="form-ayuda">Hasta {{ DIAS_MAXIMOS }} días desde hoy.</span>
       </div>
     } @else {
       <div class="form-group">
@@ -66,7 +67,7 @@
           <input id="hasta" type="text" formControlName="hasta" appMascaraFecha="fecha">
         </div>
       </div>
-      <span class="form-ayuda">Ej.: Lun, Mar y Vie a las 18:00 entre el 01/12 y el 31/12 crea todas esas funciones y elige la sala de cada una.</span>
+      <span class="form-ayuda">Ej.: Lun, Mar y Vie a las 18:00 entre el 01/12 y el 31/12 crea todas esas funciones y elige la sala de cada una. Como máximo, hasta {{ DIAS_MAXIMOS }} días desde hoy.</span>
     }
 
     <button type="submit" appAdminAccion [disabled]="cargando()">
