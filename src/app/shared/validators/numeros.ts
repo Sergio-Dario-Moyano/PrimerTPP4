@@ -14,10 +14,14 @@ export const numeroPositivoValidator: ValidatorFn = (c: AbstractControl): Valida
   return n > 0 ? null : { noPositivo: true };
 };
 
-/** Solo números enteros (sin decimales). Usar junto con numeroPositivoValidator. */
-export const enteroValidator: ValidatorFn = (c: AbstractControl): ValidationErrors | null => {
+/** Igual que numeroPositivoValidator pero acepta 0 (rechaza letras y negativos). */
+export const numeroNoNegativoValidator: ValidatorFn = (c: AbstractControl): ValidationErrors | null => {
   const valor = c.value;
   if (valor === null || valor === undefined || valor === '') return null;
-  const n = Number(valor);
-  return Number.isFinite(n) && !Number.isInteger(n) ? { noEntero: true } : null;
+  const n = typeof valor === 'number' ? valor : Number(String(valor).trim());
+  if (!Number.isFinite(n)) return { noNumerico: true };
+  return n >= 0 ? null : { negativo: true };
 };
+
+/** El validador de enteros ya existía en auth.ts: se reexporta para importarlo junto con el de positivos. */
+export { enteroValidator } from './auth';

@@ -45,22 +45,31 @@ export function aFechaBD(d: Date): string {
   return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
 }
 
-/** Texto de la BD ("2026-12-25" o "2026-12-25 18:30:00") -> Date local. */
+/**
+ * Texto de la BD -> Date local. Acepta todo lo que puede devolver Supabase:
+ *   "2026-12-25"  ·  "2026-12-25 18:30:00"  ·  "2026-12-25T18:30:00"
+ *   "2026-12-25T18:30:00+00:00"  ·  "2026-12-25 18:30:00+00"
+ * La app guarda fechas y horas "de pared" (la hora que se ve en el cine), así que
+ * se toman tal cual y se ignora cualquier sufijo de zona horaria. Antes, un sufijo
+ * como "+00" hacía que la fecha no se pudiera leer (campo vacío al editar) y
+ * "+00:00" la corría 3 horas (en Argentina, al día anterior).
+ */
 export function desdeBD(valor: string | null | undefined): Date | null {
-  if (!valor) return null;
-  const limpio = valor.length === 10 ? `${valor}T00:00:00` : valor.replace(' ', 'T');
-  const d = new Date(limpio);
-  return isNaN(d.getTime()) ? null : d;
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(valor?.trim() ?? '');
+  if (!m) return null;
+  const [, a, mes, d, h = '0', min = '0', seg = '0'] = m;
+  const fecha = new Date(Number(a), Number(mes) - 1, Number(d), Number(h), Number(min), Number(seg));
+  return isNaN(fecha.getTime()) ? null : fecha;
+}
+
+/** Texto de la BD -> "dd/mm/aaaa" (o "" si no hay fecha). Para tablas e inputs. */
+export function textoFechaBD(valor: string | null | undefined): string {
+  return aTextoFecha(desdeBD(valor));
 }
 
 /** Date -> "dd/mm/aaaa" para mostrar en un input. */
 export function aTextoFecha(d: Date | null): string {
   return d ? `${dos(d.getDate())}/${dos(d.getMonth() + 1)}/${d.getFullYear()}` : '';
-}
-
-/** Date -> "hh:mm". */
-export function aTextoHora(d: Date | null): string {
-  return d ? `${dos(d.getHours())}:${dos(d.getMinutes())}` : '';
 }
 
 // ---------- Validadores para Reactive Forms ----------

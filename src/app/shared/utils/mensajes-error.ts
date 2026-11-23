@@ -24,6 +24,7 @@ export const MENSAJES_ERROR: Record<string, (detalle: any) => string> = {
   fechaMuyLejana: e => `No puede superar los ${e.dias} días desde hoy (como máximo el ${e.limite}).`,
   noNumerico: () => 'Ingresá solo números.',
   noPositivo: () => 'Tiene que ser un número mayor a 0.',
+  negativo: () => 'No puede ser negativo.',
   losControlesNoCoinciden: () => 'Las contraseñas no coinciden.',
 };
 

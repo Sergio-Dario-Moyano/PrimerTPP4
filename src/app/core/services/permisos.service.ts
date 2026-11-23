@@ -90,6 +90,12 @@ export class PermisosService {
     }
     if (!forzar && this.usuarioCargado === userId && this.carga) return this.carga;
 
+    // Si cambió el usuario, no dejamos visibles los permisos del anterior mientras carga
+    if (this.usuarioCargado !== userId) {
+      this.rolBase.set(null);
+      this.nombreRol.set(null);
+      this.permisosRol.set(new Set());
+    }
     this.usuarioCargado = userId;
     this.carga = (async () => {
       const { data, error } = await this.supabase

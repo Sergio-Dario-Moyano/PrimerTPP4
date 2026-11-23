@@ -103,6 +103,7 @@
 
   <div class="listado-seccion">
     <h3>Próximas funciones</h3>
+    <p class="form-ayuda">"En espera" muestra cuántos clientes se anotaron en la lista de espera de una función agotada. Mientras la función tenga butacas libres, la columna queda en "—".</p>
     <div class="filtros-tabla">
       <select [value]="filtroPelicula()" (change)="filtroPelicula.set($any($event.target).value)">
         <option value="">Todas las películas</option>
@@ -111,7 +112,7 @@
     </div>
     <div class="admin-table-wrap">
       <table class="admin-table">
-        <thead><tr><th>Fecha</th><th>Película</th><th>Sala</th><th>Formato</th><th>Vendidas</th><th>En espera</th><th></th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Película</th><th>Sala</th><th>Formato</th><th>Vendidas</th><th title="Clientes anotados en la lista de espera de una función agotada. Si se liberan butacas, el primero recibe un aviso para comprar.">En espera</th><th></th></tr></thead>
         <tbody>
           @for (f of funcionesFiltradas(); track f.id) {
             <tr [class.fila-cancelada]="f.estado === 'cancelada'">

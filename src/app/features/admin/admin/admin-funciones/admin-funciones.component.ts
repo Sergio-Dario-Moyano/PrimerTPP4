@@ -7,7 +7,7 @@ import { FuncionesService, ResultadoProgramacion } from '../../../../core/servic
 import { ListaEsperaService } from '../../../../core/services/lista-espera.service';
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
-import { fechaValidator, fechaMaximaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD, superaDiasDesdeHoy, DIAS_MAXIMOS_PROGRAMACION } from '../../../../shared/utils/fechas';
+import { fechaValidator, fechaMaximaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD, aTextoFecha, superaDiasDesdeHoy, DIAS_MAXIMOS_PROGRAMACION } from '../../../../shared/utils/fechas';
 import { ModalService } from '../../../../core/services/modal.service';
 import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
@@ -112,6 +112,12 @@ export class AdminFuncionesComponent implements OnInit {
 
   fechaDe(f: FuncionListado): Date | null { return desdeBD(f.fecha_hora); }
 
+  /** "dd/mm/aaaa hh:mm" para mensajes y el log. */
+  private textoFecha(f: FuncionListado): string {
+    const d = this.fechaDe(f);
+    return d ? `${aTextoFecha(d)} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : f.fecha_hora;
+  }
+
   constructor() {
     this.actualizarObligatorios();
   }
@@ -144,6 +150,7 @@ export class AdminFuncionesComponent implements OnInit {
     if (this.modo() === 'unica') {
       const f = combinarFechaHora(v.fecha, v.hora);
       if (!f) return 'Completá la fecha (dd/mm/aaaa) y la hora (hh:mm).';
+      if (f < new Date()) return 'La fecha y hora de la función ya pasaron.';
       if (superaDiasDesdeHoy(f)) return `La función no puede superar los ${DIAS_MAXIMOS_PROGRAMACION} días desde hoy.`;
       return [f];
     }
@@ -155,11 +162,11 @@ export class AdminFuncionesComponent implements OnInit {
     if (superaDiasDesdeHoy(hasta)) return `Las funciones no pueden superar los ${DIAS_MAXIMOS_PROGRAMACION} días desde hoy.`;
     if (this.diasSeleccionados().length === 0) return 'Elegí al menos un día de la semana.';
 
-    const diffDias = (hasta.getTime() - desde.getTime()) / 86400000;
-    if (diffDias > 120) return 'El rango no puede superar los 120 días.';
-
-    const fechas = FuncionesService.generarFechasRecurrentes(desde, hasta, this.diasSeleccionados(), v.hora);
-    return fechas.length ? fechas : 'Ningún día del rango coincide con los días elegidos.';
+    // Solo las fechas que todavía no pasaron (si "desde" es hoy, la hora tiene que ser futura)
+    const ahora = new Date();
+    const fechas = FuncionesService.generarFechasRecurrentes(desde, hasta, this.diasSeleccionados(), v.hora)
+      .filter(f => f >= ahora);
+    return fechas.length ? fechas : 'Ningún día futuro del rango coincide con los días elegidos.';
   }
 
   async programar(): Promise<void> {
@@ -240,12 +247,12 @@ export class AdminFuncionesComponent implements OnInit {
       this.mensajeError.set('No se puede eliminar una función con entradas vendidas.');
       return;
     }
-    if (!(await this.modal.confirmar('Eliminar función', `¿Eliminar la función de "${f.peliculas?.titulo}" del ${f.fecha_hora.slice(0, 16)}?`, 'Eliminar'))) return;
+    if (!(await this.modal.confirmar('Eliminar función', `¿Eliminar la función de "${f.peliculas?.titulo}" del ${this.textoFecha(f)}?`, 'Eliminar'))) return;
 
     const { error } = await this.supabase.from('funciones').delete().eq('id', f.id);
     if (error) { this.mensajeError.set(error.message); return; }
     await this.log.registrar('ELIMINAR_FUNCION', 'funciones', f.id,
-      `Se eliminó la función de "${f.peliculas?.titulo}" (${f.salas?.nombre}) del ${f.fecha_hora.slice(0, 16)}`);
+      `Se eliminó la función de "${f.peliculas?.titulo}" (${f.salas?.nombre}) del ${this.textoFecha(f)}`);
     await this.cargarFunciones();
   }
 }

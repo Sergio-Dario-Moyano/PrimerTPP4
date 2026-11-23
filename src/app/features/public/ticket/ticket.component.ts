@@ -14,6 +14,7 @@ import { CompraData } from '../../../core/models/CompraData.model';
 import { EntradaData } from '../../../core/models/EntradaData.model';
 import { FuncionTicketData } from '../../../core/models/FuncionTicketData.model';
 import { ComboData } from '../../../core/models/ComboData.model';
+import { desdeBD } from '../../../shared/utils/fechas';
 
 @Component({
   selector: 'app-ticket',
@@ -147,7 +148,7 @@ export class TicketComponent implements OnInit {
           if (funcionData) {
             let fechaValida = new Date();
             if (funcionData.fecha_hora) {
-              fechaValida = new Date(funcionData.fecha_hora.replace(' ', 'T'));
+              fechaValida = desdeBD(funcionData.fecha_hora) ?? fechaValida;
             }
 
             const datosPelicula = Array.isArray(funcionData.peliculas)

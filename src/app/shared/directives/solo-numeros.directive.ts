@@ -8,18 +8,21 @@ import { Directive, ElementRef, HostListener, booleanAttribute, inject, input } 
  *
  *   <input type="number" formControlName="duracion_minutos">              -> solo enteros
  *   <input type="number" formControlName="precio_base" conDecimales>     -> admite "1500.50"
+ *   <input type="number" formControlName="costo_puntos" permitirCero>    -> 0 es un valor válido
  */
 @Directive({
   selector: 'input[type=number]',
   standalone: true,
   host: {
     '[attr.inputmode]': "conDecimales() ? 'decimal' : 'numeric'",
-    '[attr.min]': "conDecimales() ? '0.01' : '1'",
+    '[attr.min]': "permitirCero() ? '0' : (conDecimales() ? '0.01' : '1')",
     '[attr.step]': "conDecimales() ? '0.01' : '1'"
   }
 })
 export class SoloNumerosDirective {
   conDecimales = input(false, { transform: booleanAttribute });
+  /** Para campos donde 0 tiene un significado (ej. "0 puntos = no se puede canjear"). */
+  permitirCero = input(false, { transform: booleanAttribute });
 
   private el = inject<ElementRef<HTMLInputElement>>(ElementRef);
 

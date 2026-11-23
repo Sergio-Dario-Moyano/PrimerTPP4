@@ -123,7 +123,7 @@
                       [class.inactivo]="p.estado === 'archivada'">{{ p.estado }}</span>
                 @if (estaEnPreventa(p)) { <span class="badge preventa">preventa</span> }
               </td>
-              <td>{{ p.fecha_estreno ? (p.fecha_estreno | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>{{ textoEstreno(p) }}</td>
               <td>
                 {{ p.precio_base | currency:'ARS':'$':'1.0-0' }}
                 @if (p.preventa_precio != null) { <br><small>Preventa: {{ p.preventa_precio | currency:'ARS':'$':'1.0-0' }}</small> }

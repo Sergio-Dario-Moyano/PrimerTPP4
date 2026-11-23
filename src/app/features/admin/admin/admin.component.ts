@@ -4,6 +4,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/rou
 import { SupabaseService } from '../../../core/services/supabase';
 import { PermisosService } from '../../../core/services/permisos.service';
 import { ModalService } from '../../../core/services/modal.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-admin',
@@ -16,6 +17,7 @@ export class AdminComponent implements OnInit {
   private supabase = inject(SupabaseService).client;
   private router = inject(Router);
   private modalService = inject(ModalService);
+  private auth = inject(AuthService);
 
   nombreUsuario = signal<string>('Administrador');
   emailUsuario = signal<string>('');
@@ -54,7 +56,9 @@ export class AdminComponent implements OnInit {
 
   async cerrarSesion() {
     if (!(await this.modalService.confirmar('Cerrar sesión', '¿Deseás cerrar sesión?', 'Cerrar sesión'))) return;
-    await this.supabase.auth.signOut();
+    // Mismo cierre de sesión que el navbar y el perfil; además se olvidan los permisos cargados
+    await this.auth.cerrarSesion();
+    await this.permisos.cargarPara(null);
     this.router.navigate(['/home']);
   }
 }

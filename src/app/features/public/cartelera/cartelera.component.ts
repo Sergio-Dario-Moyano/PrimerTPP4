@@ -8,6 +8,7 @@ import { Pelicula } from '../../../core/models/Pelicula.model';
 import { RawPelicula } from '../../../core/models/RawPelicula.model';
 import { Combo } from '../../../core/models/Combo.model';
 import { RawCombo } from '../../../core/models/RawCombo.model';
+import { desdeBD } from '../../../shared/utils/fechas';
 
 @Component({
   selector: 'app-cartelera',
@@ -103,7 +104,7 @@ export class CarteleraComponent implements OnInit {
 
   private formatosEIdiomas(p: RawPelicula): { formatos: string[]; idiomas: string[] } {
     const ahora = new Date();
-    const futuras = (p.funciones ?? []).filter(f => f.estado !== 'cancelada' && new Date(f.fecha_hora.replace(' ', 'T')) >= ahora);
+    const futuras = (p.funciones ?? []).filter(f => f.estado !== 'cancelada' && (desdeBD(f.fecha_hora)?.getTime() ?? 0) >= ahora.getTime());
     const orden = ['2D', '3D', '4D', '5D'];
     return {
       formatos: [...new Set(futuras.map(f => f.formato))].sort((a, b) => orden.indexOf(a) - orden.indexOf(b)),

@@ -1,3 +1,5 @@
+import { desdeBD } from '../../shared/utils/fechas';
+
 /**
  * Reglas de precios centralizadas.
  * Antes los precios estaban "hardcodeados" (5000 / 7000) en varios componentes;
@@ -21,7 +23,8 @@ export interface DatosPrecioPelicula {
 /** Devuelve true si la película está en período de preventa en la fecha indicada. */
 export function enPreventa(peli: DatosPrecioPelicula, ahora: Date = new Date()): boolean {
   if (!peli.preventa_inicio || peli.preventa_precio == null) return false;
-  const inicio = new Date(peli.preventa_inicio.replace(' ', 'T'));
+  const inicio = desdeBD(peli.preventa_inicio);
+  if (!inicio) return false;
   const fin = new Date(inicio.getTime() + DIAS_PREVENTA * 24 * 60 * 60 * 1000);
   return ahora >= inicio && ahora < fin;
 }
@@ -36,9 +39,11 @@ export function ventaAbierta(
 ): boolean {
   if (peli.estado === 'cartelera') return true;
   if (peli.estado === 'archivada') return false;
-  if (peli.fecha_estreno && new Date(`${peli.fecha_estreno}T00:00:00`) <= ahora) return true;
+  const estreno = desdeBD(peli.fecha_estreno);
+  if (estreno && estreno <= ahora) return true;
   if (!peli.preventa_inicio) return false;
-  return new Date(peli.preventa_inicio.replace(' ', 'T')) <= ahora;
+  const inicio = desdeBD(peli.preventa_inicio);
+  return !!inicio && inicio <= ahora;
 }
 
 /** Precio base vigente: precio de preventa si corresponde, si no el precio normal. */

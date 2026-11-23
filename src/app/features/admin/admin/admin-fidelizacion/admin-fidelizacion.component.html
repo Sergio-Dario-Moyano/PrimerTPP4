@@ -10,24 +10,24 @@
     <div class="form-row">
       <div class="form-group">
         <label for="pe">Puntos para canjear 1 entrada gratis</label>
-        <input id="pe" type="number" min="1" [ngModel]="puntosEntrada()" (ngModelChange)="puntosEntrada.set(+$event)">
+        <input id="pe" type="number" [ngModel]="puntosEntrada()" (ngModelChange)="puntosEntrada.set(+$event)">
       </div>
       <div class="form-group">
         <label for="vip">Recargo de butacas VIP (%)</label>
-        <input id="vip" type="number" min="0" [ngModel]="recargoVip()" (ngModelChange)="recargoVip.set(+$event)">
+        <input id="vip" type="number" permitirCero [ngModel]="recargoVip()" (ngModelChange)="recargoVip.set(+$event)">
         <span class="form-ayuda">Sobre el precio de la película. Ej.: 50 → una entrada de $5.000 cuesta $7.500 en VIP.</span>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label for="vp">Valor de cada punto al pagar ($)</label>
-        <input id="vp" type="number" min="0.01" step="0.01" [ngModel]="valorPunto()" (ngModelChange)="valorPunto.set(+$event)">
+        <input id="vp" type="number" conDecimales [ngModel]="valorPunto()" (ngModelChange)="valorPunto.set(+$event)">
         <span class="form-ayuda">En el checkout los clientes pueden pagar cualquier entrada o producto con puntos.
           Ej.: 1 → 1.000 puntos cubren $1.000. Si no alcanzan, el resto se paga con tarjeta o efectivo.</span>
       </div>
       <div class="form-group">
         <label for="mt">Minutos de cada turno de la lista de espera</label>
-        <input id="mt" type="number" min="1" step="1" [ngModel]="minutosTurno()" (ngModelChange)="minutosTurno.set(+$event)">
+        <input id="mt" type="number" [ngModel]="minutosTurno()" (ngModelChange)="minutosTurno.set(+$event)">
         <span class="form-ayuda">Cuando se liberan butacas de una función agotada, el primero de la lista tiene este tiempo para comprar.
           Si no compra o la rechaza, el turno pasa al siguiente.</span>
       </div>
@@ -43,7 +43,7 @@
             <tr>
               <td>{{ p.nombre }} @if (!p.activo) { <small>(inactivo)</small> }</td>
               <td style="max-width: 140px;">
-                <input type="number" min="0" [ngModel]="p.costo_puntos" (ngModelChange)="actualizarCostoProducto(p.id, $event)" [attr.aria-label]="'Puntos de ' + p.nombre">
+                <input type="number" permitirCero [ngModel]="p.costo_puntos" (ngModelChange)="actualizarCostoProducto(p.id, $event)" [attr.aria-label]="'Puntos de ' + p.nombre">
               </td>
             </tr>
           } @empty {

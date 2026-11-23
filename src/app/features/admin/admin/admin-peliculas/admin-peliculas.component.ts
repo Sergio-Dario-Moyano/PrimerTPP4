@@ -1,13 +1,13 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { ImageDropzoneComponent } from '../../../../shared/components/image-dropzone/image-dropzone.component';
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
-import { fechaValidator, fechaMaximaValidator, DIAS_MAXIMOS_PROGRAMACION, parsearFecha, aFechaBD, aTimestampBD, desdeBD, aTextoFecha } from '../../../../shared/utils/fechas';
+import { fechaValidator, fechaMaximaValidator, DIAS_MAXIMOS_PROGRAMACION, parsearFecha, aFechaBD, aTimestampBD, desdeBD, textoFechaBD } from '../../../../shared/utils/fechas';
 import { numeroPositivoValidator, enteroValidator } from '../../../../shared/validators/numeros';
 import { SoloNumerosDirective } from '../../../../shared/directives/solo-numeros.directive';
 import { DIAS_PREVENTA, enPreventa } from '../../../../core/utils/precios';
@@ -38,7 +38,7 @@ export interface PeliculaAdmin {
 @Component({
   selector: 'app-admin-peliculas',
   standalone: true,
-  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, DatePipe, ImageDropzoneComponent, MascaraFechaDirective, AdminAccionDirective, SoloNumerosDirective],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, ImageDropzoneComponent, MascaraFechaDirective, AdminAccionDirective, SoloNumerosDirective],
   templateUrl: './admin-peliculas.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -173,7 +173,14 @@ export class AdminPeliculasComponent implements OnInit {
     return enPreventa(p);
   }
 
+  /** Estreno para la tabla: "dd/mm/aaaa" o "—" si no tiene. */
+  textoEstreno(p: PeliculaAdmin): string {
+    return textoFechaBD(p.fecha_estreno) || '—';
+  }
+
   editar(p: PeliculaAdmin): void {
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
     this.editando.set(p);
     this.generosSeleccionados.set(p.pelicula_genero.map(g => g.genero_id));
     this.form.reset({
@@ -185,7 +192,7 @@ export class AdminPeliculasComponent implements OnInit {
       restriccion_edad: p.restriccion_edad ?? 0,
       precio_base: p.precio_base,
       estado: p.estado,
-      fecha_estreno: aTextoFecha(desdeBD(p.fecha_estreno)),
+      fecha_estreno: textoFechaBD(p.fecha_estreno),
       con_preventa: p.preventa_precio != null,
       preventa_precio: p.preventa_precio
     });
@@ -258,8 +265,11 @@ export class AdminPeliculasComponent implements OnInit {
       let peliculaId: string;
 
       if (anterior) {
-        const { error } = await this.supabase.from('peliculas').update(payload).eq('id', anterior.id);
+        // .select() devuelve la fila guardada: si la base no aplicó el cambio (por ejemplo, por permisos),
+        // viene vacía y lo avisamos en lugar de mostrar "actualizada" con los datos viejos.
+        const { data: guardada, error } = await this.supabase.from('peliculas').update(payload).eq('id', anterior.id).select('id');
         if (error) throw error;
+        if (!guardada?.length) throw new Error('La base de datos no guardó los cambios. Revisá que tu usuario tenga permiso para editar películas.');
         peliculaId = anterior.id;
         await this.registrarCambios(anterior, payload);
       } else {
@@ -310,9 +320,13 @@ export class AdminPeliculasComponent implements OnInit {
   }
 
   async archivar(p: PeliculaAdmin): Promise<void> {
-    const nuevoEstado = p.estado === 'archivada' ? 'cartelera' : 'archivada';
-    const { error } = await this.supabase.from('peliculas').update({ estado: nuevoEstado }).eq('id', p.id);
-    if (error) { this.mensajeError.set(error.message); return; }
+    // Al reactivar, una película que todavía no se estrenó vuelve a "Próximamente", no a cartelera
+    const estreno = desdeBD(p.fecha_estreno);
+    const nuevoEstado: PeliculaAdmin['estado'] = p.estado !== 'archivada'
+      ? 'archivada'
+      : (estreno && estreno > new Date() ? 'proximamente' : 'cartelera');
+    const { data, error } = await this.supabase.from('peliculas').update({ estado: nuevoEstado }).eq('id', p.id).select('id');
+    if (error || !data?.length) { this.mensajeError.set(error?.message ?? 'La base de datos no guardó el cambio de estado.'); return; }
     await this.log.registrar('MODIFICAR_PELICULA', 'peliculas', p.id, `Estado de "${p.titulo}": ${p.estado} → ${nuevoEstado}`);
     await this.cargarPeliculas();
   }

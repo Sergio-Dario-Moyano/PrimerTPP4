@@ -4,7 +4,9 @@ import { DatePipe } from '@angular/common';
 import { Html5Qrcode } from 'html5-qrcode';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { PermisosService } from '../../../../core/services/permisos.service';
+import { LogService } from '../../../../core/services/log.service';
 import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
+import { desdeBD } from '../../../../shared/utils/fechas';
 
 export type ModoValidacion = 'cine' | 'candy';
 
@@ -56,6 +58,7 @@ interface CandyValidacion {
 export class ValidarQrComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private supabase = inject(SupabaseService).client;
+  private log = inject(LogService);
 
   private escaner: Html5Qrcode | null = null;
 
@@ -201,7 +204,10 @@ export class ValidarQrComponent implements OnInit, OnDestroy {
 
     const pendientes = entradas.filter(e => e.estado === 'pendiente');
     if (pendientes.length === 0) {
-      this.mensajeError.set('Estas entradas YA fueron validadas. El QR no puede volver a usarse.');
+      // Distinguimos "ya usadas" de "canceladas" (por ejemplo, la función se canceló)
+      this.mensajeError.set(entradas.every(e => e.estado === 'cancelada')
+        ? 'Estas entradas fueron canceladas: el QR no es válido.'
+        : 'Estas entradas YA fueron validadas. El QR no puede volver a usarse.');
       return;
     }
 
@@ -214,7 +220,7 @@ export class ValidarQrComponent implements OnInit, OnDestroy {
     const funcion = pendientes[0].funciones;
     const butacas = pendientes.map(e => `Fila ${e.butacas?.fila} - Butaca ${e.butacas?.columna}`);
 
-    await this.registrarLog('VALIDAR_ENTRADA', 'compras', compraId,
+    await this.log.registrar('VALIDAR_ENTRADA', 'compras', compraId,
       `Se validaron ${pendientes.length} entrada(s) del ticket ${codigo} (${funcion?.peliculas?.titulo ?? ''})`);
 
     this.resultadoValidacion.set({
@@ -223,7 +229,7 @@ export class ValidarQrComponent implements OnInit, OnDestroy {
       cliente: pendientes[0].cliente_nombre,
       pelicula: funcion?.peliculas?.titulo,
       sala: funcion?.salas?.nombre,
-      fechaHora: funcion ? new Date(funcion.fecha_hora.replace(' ', 'T')) : undefined,
+      fechaHora: desdeBD(funcion?.fecha_hora) ?? undefined,
       restriccionEdad: funcion?.peliculas?.restriccion_edad ?? 0,
       items: butacas
     });
@@ -245,7 +251,9 @@ export class ValidarQrComponent implements OnInit, OnDestroy {
 
     const pendientes = items.filter(i => i.estado === 'pendiente');
     if (pendientes.length === 0) {
-      this.mensajeError.set('Los productos de esta compra YA fueron entregados.');
+      this.mensajeError.set(items.every(i => i.estado === 'cancelado')
+        ? 'Los productos de esta compra fueron cancelados.'
+        : 'Los productos de esta compra YA fueron entregados.');
       return;
     }
 
@@ -255,7 +263,7 @@ export class ValidarQrComponent implements OnInit, OnDestroy {
       .in('id', pendientes.map(i => i.id));
     if (errUpdate) throw errUpdate;
 
-    await this.registrarLog('VALIDAR_CANDY', 'compras', compraId,
+    await this.log.registrar('VALIDAR_CANDY', 'compras', compraId,
       `Se entregaron ${pendientes.length} producto(s) del candy del ticket ${codigo}`);
 
     this.resultadoValidacion.set({
@@ -265,16 +273,5 @@ export class ValidarQrComponent implements OnInit, OnDestroy {
       items: pendientes.map(i =>
         `${i.cantidad}x ${i.combos_candy?.nombre ?? i.productos_candy?.nombre ?? 'Producto'}`)
     });
-  }
-
-  private async registrarLog(accion: string, entidad: string, entidadId: string, detalle: string): Promise<void> {
-    const { data: authData } = await this.supabase.auth.getUser();
-    await this.supabase.from('logs_actividad').insert([{
-      perfil_id: authData?.user?.id ?? null,
-      accion,
-      entidad_afectada: entidad,
-      entidad_id: entidadId,
-      detalle
-    }]);
   }
 }

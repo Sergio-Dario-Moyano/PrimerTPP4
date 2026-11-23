@@ -4,6 +4,7 @@ import { DecimalPipe } from '@angular/common';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
 import { FidelizacionService } from '../../../../core/services/fidelizacion.service';
+import { SoloNumerosDirective } from '../../../../shared/directives/solo-numeros.directive';
 
 interface ProductoPuntos { id: string; nombre: string; costo_puntos: number; activo: boolean; }
 
@@ -14,7 +15,7 @@ interface ProductoPuntos { id: string; nombre: string; costo_puntos: number; act
 @Component({
   selector: 'app-admin-fidelizacion',
   standalone: true,
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, SoloNumerosDirective],
   templateUrl: './admin-fidelizacion.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -61,13 +62,25 @@ export class AdminFidelizacionComponent implements OnInit {
     this.productos.update(lista => lista.map(p => p.id === id ? { ...p, costo_puntos: Number(valor) } : p));
   }
 
+  /** Devuelve el primer problema encontrado, o null si todo es válido. */
+  private validar(): string | null {
+    const entero = (n: number) => Number.isInteger(n);
+    if (!entero(this.puntosEntrada()) || this.puntosEntrada() < 1) return 'Los puntos para canjear una entrada tienen que ser un número entero mayor a 0.';
+    if (!Number.isFinite(this.recargoVip()) || this.recargoVip() < 0) return 'El recargo VIP no puede ser negativo (0 = sin recargo).';
+    if (!Number.isFinite(this.valorPunto()) || this.valorPunto() <= 0) return 'El valor de cada punto tiene que ser mayor a 0.';
+    if (!entero(this.minutosTurno()) || this.minutosTurno() < 1) return 'El turno de la lista de espera tiene que durar al menos 1 minuto (número entero).';
+    const malo = this.productos().find(p => !entero(p.costo_puntos) || p.costo_puntos < 0);
+    if (malo) return `El costo en puntos de "${malo.nombre}" tiene que ser un número entero (0 = no se puede canjear).`;
+    return null;
+  }
+
   async guardar(): Promise<void> {
     this.mensajeExito.set('');
     this.mensajeError.set('');
 
-    if (this.puntosEntrada() < 1 || this.recargoVip() < 0 || this.valorPunto() <= 0 || this.minutosTurno() < 1
-        || this.productos().some(p => p.costo_puntos < 0)) {
-      this.mensajeError.set('Los valores no pueden ser negativos, el valor del punto tiene que ser mayor a 0 y el turno de la lista de espera tiene que durar al menos 1 minuto.');
+    const error = this.validar();
+    if (error) {
+      this.mensajeError.set(error);
       return;
     }
 
@@ -95,7 +108,8 @@ export class AdminFidelizacionComponent implements OnInit {
       for (const p of this.productos()) {
         const antes = this.puntosOriginales.get(p.id) ?? 0;
         if (antes !== p.costo_puntos) {
-          await this.supabase.from('productos_candy').update({ costo_puntos: p.costo_puntos }).eq('id', p.id);
+          const { error: errProducto } = await this.supabase.from('productos_candy').update({ costo_puntos: p.costo_puntos }).eq('id', p.id);
+          if (errProducto) throw errProducto;
           await this.log.registrar('MODIFICAR_PRECIO', 'productos_candy', p.id,
             `Costo en puntos de "${p.nombre}": ${antes} → ${p.costo_puntos}`);
           this.puntosOriginales.set(p.id, p.costo_puntos);

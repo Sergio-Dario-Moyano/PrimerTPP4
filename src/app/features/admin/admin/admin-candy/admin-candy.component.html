@@ -33,11 +33,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="p-precio">Precio ($)</label>
-                <input id="p-precio" type="number" formControlName="precio" placeholder="Ej. 3500">
+                <input id="p-precio" type="number" formControlName="precio" conDecimales placeholder="Ej. 3500">
               </div>
               <div class="form-group">
                 <label for="p-puntos">Costo en puntos para canje (opcional)</label>
-                <input id="p-puntos" type="number" formControlName="costo_puntos" placeholder="Ej. 800">
+                <input id="p-puntos" type="number" formControlName="costo_puntos" permitirCero placeholder="Ej. 800">
                 <span class="form-ayuda">0 = no se puede canjear</span>
               </div>
             </div>
@@ -95,7 +95,7 @@
             </div>
             <div class="form-group">
               <label for="c-precio">Precio fijo ($)</label>
-              <input id="c-precio" type="number" formControlName="precio" placeholder="Ej. 9000">
+              <input id="c-precio" type="number" formControlName="precio" conDecimales placeholder="Ej. 9000">
             </div>
             <label class="checkbox-label"><input type="checkbox" formControlName="incluye_entrada"> Incluye una entrada (cubre el precio de 1 entrada general)</label>
             <label class="checkbox-label"><input type="checkbox" formControlName="en_oferta"> Destacado / en oferta</label>

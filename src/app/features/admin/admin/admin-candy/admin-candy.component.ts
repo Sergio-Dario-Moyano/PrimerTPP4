@@ -6,6 +6,8 @@ import { LogService } from '../../../../core/services/log.service';
 import { ImageDropzoneComponent } from '../../../../shared/components/image-dropzone/image-dropzone.component';
 import { ModalService } from '../../../../core/services/modal.service';
 import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
+import { SoloNumerosDirective } from '../../../../shared/directives/solo-numeros.directive';
+import { numeroPositivoValidator, numeroNoNegativoValidator, enteroValidator } from '../../../../shared/validators/numeros';
 
 interface Categoria { id: number; nombre: string; }
 
@@ -25,7 +27,7 @@ type Pestania = 'productos' | 'combos' | 'categorias';
 @Component({
   selector: 'app-admin-candy',
   standalone: true,
-  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, ImageDropzoneComponent],
+  imports: [ReactiveFormsModule, ErrorCampoDirective, CurrencyPipe, ImageDropzoneComponent, SoloNumerosDirective],
   templateUrl: './admin-candy.component.html',
   styleUrls: ['../admin-shared.css']
 })
@@ -55,8 +57,9 @@ export class AdminCandyComponent implements OnInit {
   productoForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
     categoria_id: [null as number | null, Validators.required],
-    precio: [null as number | null, [Validators.required, Validators.min(1)]],
-    costo_puntos: [null as number | null, [Validators.min(0)]],
+    precio: [null as number | null, [Validators.required, numeroPositivoValidator]],
+    // 0 puntos = el producto no se puede canjear
+    costo_puntos: [null as number | null, [numeroNoNegativoValidator, enteroValidator]],
     url_imagen: ['', Validators.required],
     activo: [true]
   });
@@ -64,7 +67,7 @@ export class AdminCandyComponent implements OnInit {
   comboForm = this.fb.nonNullable.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
     descripcion: ['', [Validators.required, Validators.minLength(5)]],
-    precio: [null as number | null, [Validators.required, Validators.min(1)]],
+    precio: [null as number | null, [Validators.required, numeroPositivoValidator]],
     imagen_url: [''],
     incluye_entrada: [false],
     en_oferta: [false],
@@ -105,6 +108,7 @@ export class AdminCandyComponent implements OnInit {
   // ---------------- Productos ----------------
 
   editarProducto(p: Producto): void {
+    this.limpiarMensajes();
     this.productoEditando.set(p);
     this.productoForm.reset({ ...p });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -158,7 +162,8 @@ export class AdminCandyComponent implements OnInit {
   }
 
   async toggleProducto(p: Producto): Promise<void> {
-    await this.supabase.from('productos_candy').update({ activo: !p.activo }).eq('id', p.id);
+    const { error } = await this.supabase.from('productos_candy').update({ activo: !p.activo }).eq('id', p.id);
+    if (error) { this.mensajeError.set(error.message); return; }
     await this.log.registrar('MODIFICAR_PRODUCTO', 'productos_candy', p.id,
       `Producto "${p.nombre}" ${p.activo ? 'desactivado' : 'activado'}`);
     await this.cargarTodo();
@@ -167,6 +172,7 @@ export class AdminCandyComponent implements OnInit {
   // ---------------- Combos ----------------
 
   editarCombo(c: Combo): void {
+    this.limpiarMensajes();
     this.comboEditando.set(c);
     this.comboForm.reset({ ...c, descripcion: c.descripcion ?? '', imagen_url: c.imagen_url ?? '' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -216,7 +222,8 @@ export class AdminCandyComponent implements OnInit {
   }
 
   async toggleCombo(c: Combo): Promise<void> {
-    await this.supabase.from('combos_candy').update({ activo: !c.activo }).eq('id', c.id);
+    const { error } = await this.supabase.from('combos_candy').update({ activo: !c.activo }).eq('id', c.id);
+    if (error) { this.mensajeError.set(error.message); return; }
     await this.log.registrar('MODIFICAR_COMBO', 'combos_candy', c.id, `Combo "${c.nombre}" ${c.activo ? 'desactivado' : 'activado'}`);
     await this.cargarTodo();
   }
