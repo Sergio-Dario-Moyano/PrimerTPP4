@@ -7,7 +7,7 @@ Trabajo Práctico N.º 1 — Programación IV.
 |---|---|
 | 🌐 **App desplegada** | https://cineutnprogramacion4.web.app |
 | 📋 **Requerimientos** | [`docs/REQUERIMIENTOS.md`](docs/REQUERIMIENTOS.md) |
-| 🗄️ **Cambios de base de datos** | [`supabase/migraciones/`](supabase/migraciones/) |
+| ⚡ **Edge Function** | [`supabase/functions/enviar-push/`](supabase/functions/enviar-push/index.ts) |
 
 ---
 
@@ -21,7 +21,8 @@ Trabajo Práctico N.º 1 — Programación IV.
 6. [Instalación y uso local](#instalación-y-uso-local)
 7. [Usuarios y roles](#usuarios-y-roles)
 8. [PWA](#pwa)
-9. [Deploy](#deploy)
+9. [Notificaciones push](#notificaciones-push-configuración)
+10. [Deploy](#deploy)
 
 ---
 
@@ -126,7 +127,8 @@ El estado de la compra en curso (butacas, candy, función, precio base) vive en 
 | `/home`, `/proximamente`, `/candy`, `/pelicula/:id` | Público | Cartelera, estrenos, candy, detalle |
 | `/sala/:id` → `/confiteria/:id` → `/checkout` → `/ticket/:id` | Público | Compra de entradas |
 | `/perfil/**` | Usuario logueado | Perfil y beneficios |
-| `/admin/peliculas`, `/funciones`, `/candy`, `/cupones`, `/fidelizacion`, `/reportes`, `/log` | `admin` | Panel |
+| `/admin/peliculas`, `/funciones`, `/candy`, `/cupones`, `/fidelizacion`, `/propuestas`, `/reportes`, `/log` | `admin` o un rol con permiso sobre esa sección | Panel |
+| `/admin/roles` | `admin` | Roles y permisos |
 | `/admin/validar` | `admin`, `empleado_cine`, `empleado_candy` | Validador |
 
 ---
@@ -218,6 +220,8 @@ ng serve
 
 Abrir http://localhost:4200.
 
+**Conexión a Supabase:** la app lee la URL del proyecto y la clave pública (`anon`) desde `src/app/core/services/environments/environment.ts`. Para usar una base propia, reemplazar `supabaseUrl` y `supabaseKey` por los del proyecto (Supabase → Project Settings → API). Nunca poner ahí la clave `service_role`.
+
 **Base de datos:** en Supabase → SQL Editor, ejecutar en este orden:
 
 1. `supabase/migraciones/001_esquema_base.sql`: tablas principales, el bucket de imágenes, el trigger del Top 3 y el índice de butacas.
@@ -226,6 +230,7 @@ Abrir http://localhost:4200.
 4. `supabase/migraciones/004_asignar_roles.sql`: función `asignar_rol` para guardar roles desde Admin → Roles y Permisos (verifica que quien asigna sea administrador) y trigger que impide que un usuario se cambie el rol por su cuenta.
 5. `supabase/migraciones/005_pago_con_puntos_y_credito.sql`: columnas para registrar los puntos usados en cada compra y cancelación de funciones que también devuelve lo pagado con puntos.
 6. `supabase/migraciones/006_lista_espera_turnos.sql`: la lista de espera da un solo turno a la vez por función; el turno dura los minutos configurados en el admin (2 por defecto) y, si la persona no compra, rechaza o se le vence el tiempo, pasa al siguiente.
+7. `supabase/migraciones/007_*.sql`: estado de la lista de espera calculado en la base, para que cada cliente vea su turno sin exponer datos de otros usuarios.
 
 Los scripts no borran datos y se pueden volver a ejecutar.
 
@@ -233,7 +238,7 @@ Los scripts no borran datos y se pueden volver a ejecutar.
 |---|---|
 | `npm start` | Servidor de desarrollo (`ng serve`) |
 | `npm run build` | Build de producción en `dist/cineutnApp/browser`, con service worker |
-| `npm test` | Tests unitarios |
+| `npm test` | Tests unitarios con Vitest (todavía no hay archivos `.spec.ts`) |
 
 ---
 
