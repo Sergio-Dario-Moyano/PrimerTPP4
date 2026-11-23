@@ -13,6 +13,8 @@ const RE_HORA = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export function parsearFecha(texto: string): Date | null {
   const m = RE_FECHA.exec(texto?.trim() ?? '');
   if (!m) return null;
+  // Años como "0268" pasan el formato pero no son fechas reales del cine
+  if (Number(m[3]) < 1900) return null;
   const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
   // Si JS "corrigió" el día (31/02 -> 03/03) la fecha no existe
   if (d.getDate() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1) return null;

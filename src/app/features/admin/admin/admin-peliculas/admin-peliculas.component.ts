@@ -1,9 +1,10 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CurrencyPipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SupabaseService } from '../../../../core/services/supabase';
 import { LogService } from '../../../../core/services/log.service';
+import { FuncionesService } from '../../../../core/services/funciones.service';
 import { ImageDropzoneComponent } from '../../../../shared/components/image-dropzone/image-dropzone.component';
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
@@ -46,6 +47,7 @@ export class AdminPeliculasComponent implements OnInit {
   private fb = inject(FormBuilder);
   private supabase = inject(SupabaseService).client;
   private log = inject(LogService);
+  private funcionesService = inject(FuncionesService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -101,6 +103,7 @@ export class AdminPeliculasComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.cargarGeneros(), this.cargarPeliculas()]);
+    await this.sincronizarEstrenos();
 
     const propuestaId = this.route.snapshot.queryParamMap.get('propuesta');
     if (propuestaId) await this.cargarPropuesta(propuestaId);
@@ -155,13 +158,43 @@ export class AdminPeliculasComponent implements OnInit {
     this.generos.set(data ?? []);
   }
 
+  /** Día de la primera función (no cancelada) de cada película: es su estreno. */
+  primeraFuncion = signal<Map<string, string>>(new Map());
+
+  /** La película que se edita tiene funciones: su estreno sale de la primera y no se escribe a mano. */
+  estrenoPorFunciones = computed(() => {
+    const p = this.editando();
+    return !!p && this.primeraFuncion().has(p.id);
+  });
+
   async cargarPeliculas(): Promise<void> {
-    const { data, error } = await this.supabase
-      .from('peliculas')
-      .select('*, pelicula_genero ( genero_id )')
-      .order('creado_en', { ascending: false });
-    if (error) { console.error(error); return; }
-    this.peliculas.set((data ?? []) as PeliculaAdmin[]);
+    const [peliculas, funciones] = await Promise.all([
+      this.supabase.from('peliculas').select('*, pelicula_genero ( genero_id )').order('creado_en', { ascending: false }),
+      this.supabase.from('funciones').select('pelicula_id, fecha_hora').neq('estado', 'cancelada').order('fecha_hora')
+    ]);
+    if (peliculas.error) { console.error(peliculas.error); return; }
+    const primeras = new Map<string, string>();
+    for (const f of funciones.data ?? []) if (!primeras.has(f.pelicula_id)) primeras.set(f.pelicula_id, f.fecha_hora);
+    this.primeraFuncion.set(primeras);
+    this.peliculas.set((peliculas.data ?? []) as PeliculaAdmin[]);
+  }
+
+  /**
+   * Corrige las películas cuyo estreno no coincide con su primera función
+   * (por ejemplo, funciones creadas antes de que el estreno se calculara solo).
+   */
+  private async sincronizarEstrenos(): Promise<void> {
+    const desfasadas = this.peliculas().filter(p => {
+      const primera = this.primeraFuncion().get(p.id);
+      return primera && textoFechaBD(primera) !== textoFechaBD(p.fecha_estreno);
+    });
+    if (!desfasadas.length) return;
+    try {
+      for (const p of desfasadas) await this.funcionesService.sincronizarEstreno(p.id);
+      await this.cargarPeliculas();
+    } catch (err) {
+      this.mensajeError.set(err instanceof Error ? err.message : 'No se pudo actualizar el estreno de algunas películas.');
+    }
   }
 
   toggleGenero(id: number): void {
@@ -203,6 +236,15 @@ export class AdminPeliculasComponent implements OnInit {
       con_preventa: p.preventa_precio != null,
       preventa_precio: p.preventa_precio
     });
+    // Con funciones programadas, el estreno es la primera función: se muestra pero no se edita
+    const primera = this.primeraFuncion().get(p.id);
+    const estreno = this.form.controls.fecha_estreno;
+    if (primera) {
+      estreno.setValue(textoFechaBD(primera));
+      estreno.disable();
+    } else {
+      estreno.enable();
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -210,6 +252,7 @@ export class AdminPeliculasComponent implements OnInit {
     this.editando.set(null);
     this.generosSeleccionados.set([]);
     this.form.reset();
+    this.form.controls.fecha_estreno.enable();
   }
 
   async guardar(): Promise<void> {

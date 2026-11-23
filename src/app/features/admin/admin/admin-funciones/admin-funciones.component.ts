@@ -7,7 +7,7 @@ import { FuncionesService, ResultadoProgramacion } from '../../../../core/servic
 import { ListaEsperaService } from '../../../../core/services/lista-espera.service';
 import { MascaraFechaDirective } from '../../../../shared/directives/mascara-fecha.directive';
 import { AdminAccionDirective } from '../../../../directives/admin-accion';
-import { fechaValidator, fechaMaximaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD, aTextoFecha, superaDiasDesdeHoy, DIAS_MAXIMOS_PROGRAMACION } from '../../../../shared/utils/fechas';
+import { fechaValidator, fechaMaximaValidator, horaValidator, parsearFecha, combinarFechaHora, desdeBD, aTextoFecha, textoFechaBD, superaDiasDesdeHoy, DIAS_MAXIMOS_PROGRAMACION } from '../../../../shared/utils/fechas';
 import { ModalService } from '../../../../core/services/modal.service';
 import { ErrorCampoDirective } from '../../../../shared/directives/error-campo.directive';
 
@@ -15,6 +15,7 @@ interface PeliculaSelect { id: string; titulo: string; duracion_minutos: number;
 
 interface FuncionListado {
   id: string;
+  pelicula_id: string;
   fecha_hora: string;
   formato: string;
   idioma: string;
@@ -69,6 +70,8 @@ export class AdminFuncionesComponent implements OnInit {
 
   cargando = signal<boolean>(false);
   mensajeError = signal<string>('');
+  /** Aviso cuando el estreno de la película cambia por las funciones programadas. */
+  avisoEstreno = signal<string>('');
   resultado = signal<ResultadoProgramacion | null>(null);
 
   funcionesFiltradas = computed(() => {
@@ -100,7 +103,7 @@ export class AdminFuncionesComponent implements OnInit {
     const desde = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
     const { data, error } = await this.supabase
       .from('funciones')
-      .select('id, fecha_hora, formato, idioma, estado, motivo_cancelacion, salas ( nombre ), peliculas ( titulo ), entradas ( count )')
+      .select('id, pelicula_id, fecha_hora, formato, idioma, estado, motivo_cancelacion, salas ( nombre ), peliculas ( titulo ), entradas ( count )')
       .neq('entradas.estado', 'cancelada')
       .gte('fecha_hora', desde)
       .order('fecha_hora');
@@ -171,6 +174,7 @@ export class AdminFuncionesComponent implements OnInit {
 
   async programar(): Promise<void> {
     this.mensajeError.set('');
+    this.avisoEstreno.set('');
     this.resultado.set(null);
 
     if (this.form.invalid) {
@@ -192,6 +196,7 @@ export class AdminFuncionesComponent implements OnInit {
         peliculaId: v.pelicula_id, fechas, formato: v.formato, idioma: v.idioma
       });
       this.resultado.set(res);
+      if (res.creadas.length) await this.actualizarEstreno(v.pelicula_id);
       // Formulario limpio para la próxima carga (formato e idioma vuelven a sus valores por defecto)
       this.form.reset();
       this.diasSeleccionados.set([]);
@@ -239,6 +244,7 @@ export class AdminFuncionesComponent implements OnInit {
       `$${Math.round(r.total).toLocaleString('es-AR')} acreditados como crédito` +
       (r.anonimas ? ` (${r.anonimas} anónima(s): el crédito se acredita cuando inicien sesión con su email).` : '.'));
     this.cancelandoId.set(null);
+    await this.actualizarEstreno(f.pelicula_id);
     await this.cargarFunciones();
   }
 
@@ -253,6 +259,21 @@ export class AdminFuncionesComponent implements OnInit {
     if (error) { this.mensajeError.set(error.message); return; }
     await this.log.registrar('ELIMINAR_FUNCION', 'funciones', f.id,
       `Se eliminó la función de "${f.peliculas?.titulo}" (${f.salas?.nombre}) del ${this.textoFecha(f)}`);
+    await this.actualizarEstreno(f.pelicula_id);
     await this.cargarFunciones();
+  }
+
+  /** El estreno de la película pasa a ser el día de su primera función. */
+  private async actualizarEstreno(peliculaId: string): Promise<void> {
+    this.avisoEstreno.set('');
+    try {
+      const nuevo = await this.funcionesService.sincronizarEstreno(peliculaId);
+      if (nuevo) {
+        const titulo = this.peliculas().find(p => p.id === peliculaId)?.titulo ?? 'la película';
+        this.avisoEstreno.set(`El estreno de "${titulo}" ahora es el ${textoFechaBD(nuevo)} (su primera función).`);
+      }
+    } catch (err) {
+      this.mensajeError.set(err instanceof Error ? err.message : 'No se pudo actualizar el estreno de la película.');
+    }
   }
 }

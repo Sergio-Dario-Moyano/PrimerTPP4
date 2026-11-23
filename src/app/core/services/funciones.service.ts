@@ -1,7 +1,8 @@
 import { Service, inject } from '@angular/core';
 import { SupabaseService } from './supabase';
 import { LogService } from './log.service';
-import { aTimestampBD, desdeBD } from '../../shared/utils/fechas';
+import { aTimestampBD, aFechaBD, desdeBD, textoFechaBD } from '../../shared/utils/fechas';
+import { DIAS_PREVENTA } from '../utils/precios';
 
 /** Margen obligatorio entre el fin de una función y el inicio de la siguiente (mail 01/01). */
 export const MARGEN_LIMPIEZA_MIN = 30;
@@ -115,6 +116,47 @@ export class FuncionesService {
     }
 
     return resultado;
+  }
+
+  /**
+   * El estreno de una película es el día de su PRIMERA función (no cancelada).
+   * Se llama después de crear, eliminar o cancelar funciones, y al abrir Películas.
+   * Si la película todavía no tiene funciones, queda la fecha cargada a mano
+   * (la que se anuncia en "Próximamente").
+   * Si hay preventa, se corre con el estreno (abre 7 días antes).
+   * Devuelve la fecha nueva ("aaaa-mm-dd") si cambió, o null si ya estaba bien.
+   */
+  async sincronizarEstreno(peliculaId: string): Promise<string | null> {
+    const [primera, pelicula] = await Promise.all([
+      this.supabase.from('funciones').select('fecha_hora')
+        .eq('pelicula_id', peliculaId).neq('estado', 'cancelada')
+        .order('fecha_hora').limit(1).maybeSingle(),
+      this.supabase.from('peliculas').select('titulo, fecha_estreno, preventa_precio')
+        .eq('id', peliculaId).single()
+    ]);
+    if (primera.error) throw primera.error;
+    if (pelicula.error) throw pelicula.error;
+
+    const dia = desdeBD(primera.data?.fecha_hora);
+    if (!dia) return null; // sin funciones: se respeta la fecha cargada a mano
+    const estreno = aFechaBD(dia);
+    const anterior = pelicula.data.fecha_estreno;
+    if (anterior?.slice(0, 10) === estreno) return null;
+
+    let preventa_inicio: string | null = null;
+    if (pelicula.data.preventa_precio != null) {
+      const inicio = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate() - DIAS_PREVENTA);
+      preventa_inicio = aTimestampBD(inicio);
+    }
+
+    const { data, error } = await this.supabase.from('peliculas')
+      .update({ fecha_estreno: estreno, preventa_inicio }).eq('id', peliculaId).select('id');
+    if (error) throw error;
+    if (!data?.length) throw new Error('No se pudo actualizar el estreno de la película: tu usuario no tiene permiso para editar películas.');
+
+    await this.log.registrar('MODIFICAR_PELICULA', 'peliculas', peliculaId,
+      `Estreno de "${pelicula.data.titulo}" tomado de su primera función: ${textoFechaBD(anterior) || 'sin fecha'} → ${textoFechaBD(estreno)}`);
+    return estreno;
   }
 
   /**
