@@ -173,6 +173,13 @@ export class AdminPeliculasComponent implements OnInit {
     return enPreventa(p);
   }
 
+  /** Pone (o agrega) la fila recién guardada en la tabla. */
+  private reemplazarEnTabla(fila: PeliculaAdmin): void {
+    this.peliculas.update(lista => lista.some(p => p.id === fila.id)
+      ? lista.map(p => (p.id === fila.id ? fila : p))
+      : [fila, ...lista]);
+  }
+
   /** Estreno para la tabla: "dd/mm/aaaa" o "—" si no tiene. */
   textoEstreno(p: PeliculaAdmin): string {
     return textoFechaBD(p.fecha_estreno) || '—';
@@ -263,18 +270,22 @@ export class AdminPeliculasComponent implements OnInit {
     try {
       const anterior = this.editando();
       let peliculaId: string;
+      // La fila tal como quedó en la base (la devuelve el propio insert/update)
+      let filaGuardada: PeliculaAdmin | null = null;
 
       if (anterior) {
         // .select() devuelve la fila guardada: si la base no aplicó el cambio (por ejemplo, por permisos),
         // viene vacía y lo avisamos en lugar de mostrar "actualizada" con los datos viejos.
-        const { data: guardada, error } = await this.supabase.from('peliculas').update(payload).eq('id', anterior.id).select('id');
+        const { data: guardada, error } = await this.supabase.from('peliculas').update(payload).eq('id', anterior.id).select('*');
         if (error) throw error;
-        if (!guardada?.length) throw new Error('La base de datos no guardó los cambios. Revisá que tu usuario tenga permiso para editar películas.');
+        filaGuardada = (guardada?.[0] as PeliculaAdmin | undefined) ?? null;
+        if (!filaGuardada) throw new Error('La base de datos no guardó los cambios. Revisá que tu usuario tenga permiso para editar películas.');
         peliculaId = anterior.id;
         await this.registrarCambios(anterior, payload);
       } else {
-        const { data, error } = await this.supabase.from('peliculas').insert([payload]).select('id').single();
+        const { data, error } = await this.supabase.from('peliculas').insert([payload]).select('*').single();
         if (error) throw error;
+        filaGuardada = data as PeliculaAdmin;
         peliculaId = data.id;
         await this.log.registrar('CREAR_PELICULA', 'peliculas', peliculaId,
           `Se creó la película "${payload.titulo}" (${payload.estado}) a $${payload.precio_base}`);
@@ -293,6 +304,9 @@ export class AdminPeliculasComponent implements OnInit {
       this.mensajeExito.set(anterior ? `"${payload.titulo}" actualizada.` : `"${payload.titulo}" creada.`);
       this.cancelarEdicion();
       await this.cargarPeliculas();
+      // La tabla muestra lo que devolvió la base al guardar, aunque la lista recargada
+      // llegue de una copia vieja (caché de la PWA cuando la conexión está lenta).
+      this.reemplazarEnTabla({ ...filaGuardada!, pelicula_genero: generos.map(genero_id => ({ genero_id })) });
     } catch (err) {
       console.error(err);
       this.mensajeError.set(err instanceof Error ? err.message : 'No se pudo guardar la película.');
@@ -329,5 +343,6 @@ export class AdminPeliculasComponent implements OnInit {
     if (error || !data?.length) { this.mensajeError.set(error?.message ?? 'La base de datos no guardó el cambio de estado.'); return; }
     await this.log.registrar('MODIFICAR_PELICULA', 'peliculas', p.id, `Estado de "${p.titulo}": ${p.estado} → ${nuevoEstado}`);
     await this.cargarPeliculas();
+    this.reemplazarEnTabla({ ...p, estado: nuevoEstado });
   }
 }
